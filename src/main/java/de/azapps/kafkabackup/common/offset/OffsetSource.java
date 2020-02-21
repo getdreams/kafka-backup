@@ -47,9 +47,15 @@ public class OffsetSource {
 
     public void syncGroupForOffset(TopicPartition topicPartition, long sourceOffset, long targetOffset) throws IOException {
         OffsetStoreFile offsetStoreFile = topicOffsets.get(topicPartition);
-        // __consumer_offsets contains the offset of the message to read next. So we need to search for the offset + 1
-        // if we do not do that we might miss
-        List<String> groups = offsetStoreFile.groupForOffset(sourceOffset + 1);
+        List<String> groups;
+        if (offsetStoreFile != null) {
+            // __consumer_offsets contains the offset of the message to read next. So we need to search for the offset + 1
+            // if we do not do that we might miss
+            groups = offsetStoreFile.groupForOffset(sourceOffset + 1);
+        } else {
+            // This is normal: if no consumer group was backed up for this topic partition the topicOffsets map returns null.
+            groups = Collections.emptyList();
+        }
         if (groups != null && groups.size() > 0) {
             for (String group : groups) {
                 Map<String, Object> groupConsumerConfig = new HashMap<>(consumerConfig);
