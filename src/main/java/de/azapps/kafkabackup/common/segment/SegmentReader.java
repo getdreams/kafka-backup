@@ -7,6 +7,7 @@ import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -45,11 +46,14 @@ public class SegmentReader {
     }
 
     public void seek(long offset) throws IndexOutOfBoundsException, IOException {
-        Optional<Long> optionalPosition = segmentIndex.findByOffset(offset);
-        if (!optionalPosition.isPresent()) {
-            throw new IndexOutOfBoundsException("Could not find offset " + offset + " in topic " + topic + ", segment " + filePrefix + " ok " + optionalPosition);
+        Optional<Long> optionalPosition = segmentIndex.findEarliestWithHigherOrEqualOffset(offset);
+        if (optionalPosition.isPresent()) {
+            recordInputStream.getChannel().position(optionalPosition.get());
+        } else {
+            // If we couldn't find such a record, skip to EOF. This will make sure that hasMoreData() returns false.
+            FileChannel fileChannel = recordInputStream.getChannel();
+            fileChannel.position(fileChannel.size());
         }
-        recordInputStream.getChannel().position(optionalPosition.get());
     }
 
     public boolean hasMoreData() throws IOException {
