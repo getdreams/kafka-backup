@@ -79,10 +79,16 @@ public class BackupSourceTask extends SourceTask {
             Files.list(topicDir).forEach((Path f) -> {
                 Optional<Integer> partition = PartitionUtils.isPartitionIndex(f);
                 if (partition.isPresent()) {
-                    TopicPartition topicPartition = new TopicPartition(topic, partition.get());
+                    Integer partitionNumber = partition.get();
+                    log.info("Finding partition for topic: {} partition: {} ", topic, partitionNumber);
+                    if(partitionNumber > 2) {
+                    log.info("We don't support partition greater then 2 (topic: {} partition: {})", topic, partitionNumber);
+                        return;
+                    }
+                    TopicPartition topicPartition = new TopicPartition(topic, partitionNumber);
                     PartitionReader partitionReader;
                     try {
-                        partitionReader = new PartitionReader(topic, partition.get(), topicDir);
+                        partitionReader = new PartitionReader(topic, partitionNumber, topicDir);
                     } catch (IOException | PartitionIndex.IndexException | PartitionReader.PartitionException | SegmentIndex.IndexException e) {
                         throw new RuntimeException(e);
                     }
