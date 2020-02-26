@@ -5,8 +5,13 @@ import org.apache.kafka.common.config.ConfigDef;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class BackupSinkConfig extends AbstractConfig {
+    private static final Logger log = LoggerFactory.getLogger(BackupSinkConfig.class);
+
+
     private static final String CLUSTER_PREFIX = "cluster.";
     private static final String CLUSTER_BOOTSTRAP_SERVERS = CLUSTER_PREFIX + "bootstrap.servers";
     private static final String ADMIN_CLIENT_PREFIX = "admin.";
@@ -47,5 +52,9 @@ class BackupSinkConfig extends AbstractConfig {
         return getInt(MAX_SEGMENT_SIZE);
     }
 
-
+    public void logAll() {
+        log.info("values: {}", this.values());
+        log.info("originals: {}", this.originalsStrings());
+        log.info("unused: {}", this.unused());
+    }
 }
