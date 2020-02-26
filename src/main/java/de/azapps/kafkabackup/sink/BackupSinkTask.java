@@ -43,7 +43,9 @@ public class BackupSinkTask extends SinkTask {
             Files.createDirectories(targetDir);
 
             // Setup OffsetSink
-            AdminClient adminClient = AdminClient.create(config.adminConfig());
+            Map<String, Object> adminConfig = config.adminConfig();
+            log.info("Initialized AdminClient: {}", adminConfig);
+            AdminClient adminClient = AdminClient.create(adminConfig);
             offsetSink = new OffsetSink(adminClient, targetDir);
             log.info("Initialized BackupSinkTask with target dir {}", targetDir);
         } catch (IOException e) {
