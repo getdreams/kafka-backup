@@ -101,7 +101,7 @@ public class BackupSourceTask extends SourceTask {
             for (PartitionReader partitionReader : partitionReaders.values()) {
                 List<Record> records = partitionReader.readN(batchSize);
                 if (records.size() > 0) {
-                    log.debug("Read " + records.size() + " record " +
+                    log.info("Read " + records.size() + " record " +
                             "from topic " + records.get(0).topic() +
                             " partition " + records.get(0).kafkaPartition() +
                             ". Current offset: " + records.get(records.size() - 1).kafkaOffset());

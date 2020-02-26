@@ -45,7 +45,7 @@ public class BackupSinkTask extends SinkTask {
             // Setup OffsetSink
             AdminClient adminClient = AdminClient.create(config.adminConfig());
             offsetSink = new OffsetSink(adminClient, targetDir);
-            log.debug("Initialized BackupSinkTask with target dir {}", targetDir);
+            log.info("Initialized BackupSinkTask with target dir {}", targetDir);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -55,7 +55,7 @@ public class BackupSinkTask extends SinkTask {
     public void put(Collection<SinkRecord> records) {
         try {
             for (SinkRecord sinkRecord : records) {
-                log.info("Start backing up topic %s, Partition %d, up to offset %d",
+                log.info("Start backing up topic %s, Pogsartition %d, up to offset %d",
                     sinkRecord.topic(), sinkRecord.kafkaPartition(), sinkRecord.kafkaOffset());
                 TopicPartition topicPartition = new TopicPartition(sinkRecord.topic(), sinkRecord.kafkaPartition());
                 PartitionWriter partition = partitionWriters.get(topicPartition);
@@ -74,6 +74,7 @@ public class BackupSinkTask extends SinkTask {
         super.open(partitions);
         try {
             for (TopicPartition topicPartition : partitions) {
+                log.info("BackupSinkTask.open");
                 Path topicDir = Paths.get(targetDir.toString(), topicPartition.topic());
                 Files.createDirectories(topicDir);
                 PartitionWriter partitionWriter = new PartitionWriter(topicPartition.topic(), topicPartition.partition(), topicDir, maxSegmentSize);
@@ -87,7 +88,7 @@ public class BackupSinkTask extends SinkTask {
                 // explicitly to forcibly override any committed offsets.
                 if (lastWrittenOffset > 0) {
                     context.offset(topicPartition, lastWrittenOffset + 1);
-                    log.debug("Initialized Topic {}, Partition {}. Last written offset: {}"
+                    log.info("Initialized Topic {}, Partition {}. Last written offset: {}"
                             , topicPartition.topic(), topicPartition.partition(), lastWrittenOffset);
                 } else {
                     // The offset was not found, so rather than forcibly set the offset to 0 we let the
@@ -113,7 +114,7 @@ public class BackupSinkTask extends SinkTask {
                 PartitionWriter partitionWriter = partitionWriters.get(topicPartition);
                 partitionWriter.close();
                 partitionWriters.remove(topicPartition);
-                log.debug("Closed BackupSinkTask for Topic {}, Partition {}"
+                log.info("Closed BackupSinkTask for Topic {}, Partition {}"
                         , topicPartition.topic(), topicPartition.partition());
             }
         } catch (IOException e) {
@@ -139,7 +140,7 @@ public class BackupSinkTask extends SinkTask {
         try {
             for (PartitionWriter partitionWriter : partitionWriters.values()) {
                 partitionWriter.flush();
-                log.debug("Flushed Topic {}, Partition {}"
+                log.info("Flushed Topic {}, Partition {}"
                         , partitionWriter.topic(), partitionWriter.partition());
             }
             offsetSink.flush();
