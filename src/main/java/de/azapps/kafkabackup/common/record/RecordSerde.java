@@ -15,8 +15,8 @@ import java.nio.charset.StandardCharsets;
 /**
  * Record Format:
  * offset: int64
- * timestamp: int64
  * timestampType: int32
+ * [timestamp: int64] if timestampType != NO_TIMESTAMP_TYPE
  * keyLength: int32
  * key: byte[keyLength]
  * valueLength: int32
