@@ -49,23 +49,45 @@ public class AwsS3Service {
   }
 
   public boolean checkIfObjectExists(String bucketName, String objectName) {
-    return s3Client.doesObjectExist(bucketName, objectName);
+    for (int left = 3; left > 0; left--) {
+      try {
+        return s3Client.doesObjectExist(bucketName, objectName);
+      } catch (AmazonClientException e) {
+        log.warn(e.toString());
+        if (left <= 1) {
+          throw runtimeException("check if object exists", e);
+        }
+      }
+    }
+    return false;
   }
 
   private S3Object getObject(GetObjectRequest getObjectRequest) {
-    try {
-      return s3Client.getObject(getObjectRequest);
-    } catch (AmazonClientException e) {
-      throw runtimeException("get file", e);
+    for (int left = 3; left > 0; left--) {
+      try {
+        return s3Client.getObject(getObjectRequest);
+      } catch (AmazonClientException e) {
+        log.warn(e.toString());
+        if (left <= 1) {
+          throw runtimeException("get file", e);
+        }
+      }
     }
+    return null;
   }
 
   private PutObjectResult putObject(PutObjectRequest putObjectRequest) {
-    try {
-      return s3Client.putObject(putObjectRequest);
-    } catch (AmazonClientException e) {
-      throw runtimeException("save file", e);
+    for (int left = 3; left > 0; left--) {
+      try {
+        return s3Client.putObject(putObjectRequest);
+      } catch (AmazonClientException e) {
+        log.warn(e.toString());
+        if (left <= 1) {
+          throw runtimeException("save file", e);
+        }
+      }
     }
+    return null;
   }
 
   private RuntimeException runtimeException(String action, AmazonClientException e) {
