@@ -1,0 +1,18 @@
+{
+  "name": "kafka-backup-sink-5",
+  "config": {
+    "connector.class": "de.azapps.kafkabackup.sink.BackupSinkConnector",
+    "tasks.max": "1",
+    "topics.regex": ".*",
+    "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+    "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+    "header.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
+    "target.dir": "/tmp/backup",
+    "max.segment.size.bytes": "1073741824",
+    "cluster.bootstrap.servers": "purple-underground-01.srvs.cloudkafka.com:9094,purple-underground-02.srvs.cloudkafka.com:9094,purple-underground-03.srvs.cloudkafka.com:9094",
+    "admin.security.protocol": "SASL_SSL",
+    "admin.sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"xxxx\" password=\"xxxx\";",
+    "admin.sasl.mechanism": "SCRAM-SHA-256",
+    "consumer.groups.sync.max.age.ms": 2000
+  }
+}

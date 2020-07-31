@@ -15,9 +15,14 @@ public class ListRecordFormatter extends RecordFormatter {
 
     @Override
     public void writeTo(Record record, PrintStream outputStream) {
-        outputStream.println("Offset: " + record.kafkaOffset()
-                + " Key: " + keyFormatter.toString(record.key())
-                + " Timestamp: " + timestampFormat.format(record.timestamp())
-                + " Data Length: " + record.value().length);
+        long kafkaOffset = record.kafkaOffset();
+        byte[] key = record.key();
+        Long timestamp = record.timestamp();
+        byte[] value = record.value();
+        outputStream.println(
+                "Offset: " + kafkaOffset
+                + " Key: " + keyFormatter.toString(key)
+                + " Timestamp: " + timestampFormat.format(timestamp)
+                + " Data Length: " + (value == null ? "null" : value.length));
     }
 }
