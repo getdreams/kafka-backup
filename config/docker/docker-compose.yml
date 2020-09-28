@@ -2,7 +2,7 @@
 version: '3.7'
 services:
   connect:
-    build: ../../connect
+    build: .
     network_mode: "host"
     volumes:
       - ../../connect/tmp:/tmp
