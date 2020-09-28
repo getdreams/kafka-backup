@@ -11,5 +11,5 @@ RUN git status
 RUN ./gradlew shadowJar
 
 # The actual image:
-FROM confluentinc/cp-kafka-connect:5.4.1
+FROM confluentinc/cp-kafka-connect:5.5.1
 COPY --from=builder /usr/src/kafka-backup/build/libs/kafka-backup.jar /etc/kafka-connect/jars/
