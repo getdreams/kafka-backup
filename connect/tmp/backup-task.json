@@ -1,5 +1,5 @@
 {
-  "name": "kafka-backup-sink-5",
+  "name": "kafka-backup-sink-adam-2",
   "config": {
     "connector.class": "de.azapps.kafkabackup.sink.BackupSinkConnector",
     "tasks.max": "1",
@@ -7,12 +7,9 @@
     "key.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
     "value.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
     "header.converter": "org.apache.kafka.connect.converters.ByteArrayConverter",
-    "target.dir": "/tmp/backup",
+    "target.dir": "/tmp/backup-stg",
     "max.segment.size.bytes": "1073741824",
-    "cluster.bootstrap.servers": "purple-underground-01.srvs.cloudkafka.com:9094,purple-underground-02.srvs.cloudkafka.com:9094,purple-underground-03.srvs.cloudkafka.com:9094",
-    "admin.security.protocol": "SASL_SSL",
-    "admin.sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"xxxx\" password=\"xxxx\";",
-    "admin.sasl.mechanism": "SCRAM-SHA-256",
+    "cluster.bootstrap.servers": "b-1.d2-stage-fims.ugfxtu.c3.kafka.eu-west-1.amazonaws.com:9092,b-2.d2-stage-fims.ugfxtu.c3.kafka.eu-west-1.amazonaws.com:9092,b-3.d2-stage-fims.ugfxtu.c3.kafka.eu-west-1.amazonaws.com:9092",
     "consumer.groups.sync.max.age.ms": 2000
   }
 }

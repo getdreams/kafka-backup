@@ -7,7 +7,7 @@ services:
     volumes:
       - ../../connect/tmp:/tmp
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: purple-underground-01.srvs.cloudkafka.com:9094
+      CONNECT_BOOTSTRAP_SERVERS: b-1.d2-stage-fims.ugfxtu.c3.kafka.eu-west-1.amazonaws.com:9092,b-2.d2-stage-fims.ugfxtu.c3.kafka.eu-west-1.amazonaws.com:9092,b-3.d2-stage-fims.ugfxtu.c3.kafka.eu-west-1.amazonaws.com:9092
       CONNECT_REST_PORT: 8083
       CONNECT_GROUP_ID: "connect-cluster-2"
 
@@ -23,22 +23,22 @@ services:
       CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.converters.ByteArrayConverter
 
       CONNECT_REST_ADVERTISED_HOST_NAME: "localhost"
-
-      CONNECT_SECURITY_PROTOCOL: SASL_SSL
-      CONNECT_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="xxxx" password="xxxx";'
-      CONNECT_SASL_MECHANISM: SCRAM-SHA-256
-
-      CONNECT_CONSUMER_SECURITY_PROTOCOL: SASL_SSL
-      CONNECT_CONSUMER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="xxxx" password="xxxx";'
-      CONNECT_CONSUMER_SASL_MECHANISM: SCRAM-SHA-256
-
-      CONNECT_PRODUCER_SECURITY_PROTOCOL: SASL_SSL
-      CONNECT_PRODUCER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="xxxx" password="xxxx";'
-      CONNECT_PRODUCER_SASL_MECHANISM: SCRAM-SHA-256
-
-      CONNECT_ADMIN_SECURITY_PROTOCOL: SASL_SSL
-      CONNECT_ADMIN_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="xxxx" password="xxxx";'
-      CONNECT_ADMIN_SASL_MECHANISM: SCRAM-SHA-256
+#
+#      CONNECT_SECURITY_PROTOCOL: SASL_SSL
+#      CONNECT_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="xxxx" password="xxxx";'
+#      CONNECT_SASL_MECHANISM: SCRAM-SHA-256
+#
+#      CONNECT_CONSUMER_SECURITY_PROTOCOL: SASL_SSL
+#      CONNECT_CONSUMER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="xxxx" password="xxxx";'
+#      CONNECT_CONSUMER_SASL_MECHANISM: SCRAM-SHA-256
+#
+#      CONNECT_PRODUCER_SECURITY_PROTOCOL: SASL_SSL
+#      CONNECT_PRODUCER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="xxxx" password="xxxx";'
+#      CONNECT_PRODUCER_SASL_MECHANISM: SCRAM-SHA-256
+#
+#      CONNECT_ADMIN_SECURITY_PROTOCOL: SASL_SSL
+#      CONNECT_ADMIN_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="xxxx" password="xxxx";'
+#      CONNECT_ADMIN_SASL_MECHANISM: SCRAM-SHA-256
 
       CONSUMER_ISOLATION_LEVEL: read_committed
       JAVA_TOOL_OPTIONS: "-Xmx4096m -Xms2048m"
