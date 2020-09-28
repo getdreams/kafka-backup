@@ -81,10 +81,10 @@ public class BackupSourceTask extends SourceTask {
                 if (partition.isPresent()) {
                     Integer partitionNumber = partition.get();
                     log.info("Finding partition for topic: {} partition: {} ", topic, partitionNumber);
-                    if(partitionNumber > 2) {
-                    log.info("We don't support partition greater then 2 (topic: {} partition: {})", topic, partitionNumber);
-                        return;
-                    }
+//                    if(partitionNumber > 2) {
+//                    log.info("We don't support partition greater then 2 (topic: {} partition: {})", topic, partitionNumber);
+//                        return;
+//                    }
                     TopicPartition topicPartition = new TopicPartition(topic, partitionNumber);
                     PartitionReader partitionReader;
                     try {
