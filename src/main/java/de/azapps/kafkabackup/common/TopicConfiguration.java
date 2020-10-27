@@ -12,6 +12,7 @@ public class TopicConfiguration {
 
   private final String topicName;
   private final int partitionsNumber;
+  private final int replicationFactor;
   private Map<String, String> configuration;
 
   public void setConfiguration(Map<String, String> configuration) {
