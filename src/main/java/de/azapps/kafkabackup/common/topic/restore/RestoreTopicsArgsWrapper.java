@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import java.util.Properties;
 import lombok.Getter;
 import lombok.ToString;
@@ -18,7 +19,7 @@ public class RestoreTopicsArgsWrapper {
   public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrapServers";
 
   public static final String RESTORE_DRY_RUN = "restore.dryRun";
-  public static final String RESTORE_IGNORE_EXISTING_TOPICS = "restore.ignoreExistingTopics";
+  public static final String RESTORE_TOPIC_LIST = "restore.topicList";
   public static final String RESTORE_TIME = "restore.time";
   public static final String RESTORE_HASH = "restore.hash";
 
@@ -27,7 +28,7 @@ public class RestoreTopicsArgsWrapper {
   private String kafkaBootstrapServers;
   private String hashToRestore;
   private LocalDateTime timeToRestore;
-  private boolean ignoreExistingTopics;
+  private List<String> topicsToRestore;
   private boolean isDryRun;
 
   public void readProperties(String path) {
@@ -66,7 +67,7 @@ public class RestoreTopicsArgsWrapper {
         throw new RestoreConfigurationException("Both hash and time to restore specified. Only one allowed.");
       }
 
-      ignoreExistingTopics = Boolean.parseBoolean(properties.getProperty(RESTORE_IGNORE_EXISTING_TOPICS, "false"));
+      topicsToRestore = List.of(properties.getProperty(RESTORE_TOPIC_LIST, "").split(","));
       isDryRun = Boolean.parseBoolean(properties.getProperty(RESTORE_DRY_RUN, "true"));
     } catch (IOException ex) {
       System.out.println(ex.getMessage());
