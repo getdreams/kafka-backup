@@ -5,10 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
+import de.azapps.kafkabackup.common.topic.restore.RestoreTopicsArgsWrapper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.io.IOException;
+import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -23,19 +27,22 @@ class RestoreTopicService {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public void restoreTopics(String configurationChecksum) {
-    TopicsConfig config = getTopicsConfig(configurationChecksum);
-    restoreTopics(config);
+  public void restoreTopics(RestoreTopicsArgsWrapper restoreTopicsArgsWrapper) {
+    TopicsConfig topicsConfig;
 
-  }
-  public void restoreTopics(long restorationTimestamp) {
-    TopicsConfig config = getTopicsConfig(restorationTimestamp);
-    restoreTopics(config);
+    if (restoreTopicsArgsWrapper.getHashToRestore() != null) {
+      topicsConfig = getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore());
+    }
+    else {
+      topicsConfig = getTopicsConfig(restoreTopicsArgsWrapper.getTimestampToRestore());
+    }
+
+    restoreTopics(topicsConfig, restoreTopicsArgsWrapper.getTopicsToRestore(), restoreTopicsArgsWrapper.isDryRun());
   }
 
-   void restoreTopics(TopicsConfig config) {
-    log.info("Restoring topics configuration...");
-    createTopics(config);
+   void restoreTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
+    log.info("Restoring topics. Dry run mode: {}", isDryRun);
+    createTopics(config, topicsToRestore, isDryRun);
     log.info("All topics has been created");
   }
 
@@ -54,10 +61,13 @@ class RestoreTopicService {
   }
 
 
-  private List<NewTopic> createTopics(TopicsConfig config) {
+  private List<NewTopic> createTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
 
-    List<TopicConfiguration> topics = config.getTopics();
-    List<String> topicNames = topics.stream().map(TopicConfiguration::getTopicName).collect(Collectors.toList());
+
+    Stream<TopicConfiguration> topics = config.getTopics().stream()
+        .filter(topic -> topicsToRestore.isEmpty() || topicsToRestore.contains(topic));
+
+    List<String> topicNames = topics.map(TopicConfiguration::getTopicName).collect(Collectors.toList());
 
     List<String> existingTopics = adminClientService.describeAllTopics().stream().map(TopicConfiguration::getTopicName)
         .filter(topicNames::contains)
@@ -69,7 +79,7 @@ class RestoreTopicService {
       throw new RuntimeException("Some of the topics from configuration already exists");
     }
 
-    List<NewTopic> newTopicList = topics.stream().map(topicConfiguration -> {
+    List<NewTopic> newTopicList = topics.map(topicConfiguration -> {
       NewTopic newTopic = new NewTopic(topicConfiguration.getTopicName(), topicConfiguration.getPartitionsNumber(),
           (short) topicConfiguration.getReplicationFactor());
 
@@ -78,8 +88,12 @@ class RestoreTopicService {
     })
         .collect(Collectors.toList());
 
-    adminClientService.createTopics(newTopicList);
-
+    if (!isDryRun) {
+      adminClientService.createTopics(newTopicList);
+    }
+    else {
+      log.info("DryRun mode. Topics to be created: \n{}", newTopicList);
+    }
 
     return newTopicList;
   }

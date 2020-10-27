@@ -1,6 +1,7 @@
 package de.azapps.kafkabackup.common.topic.restore;
 
-import com.sun.tools.javac.util.ArrayUtils;
+
+import de.azapps.kafkabackup.restore.RestoreFacade;
 import java.util.Arrays;
 
 public class RestoreTopicsTask {
@@ -17,6 +18,11 @@ public class RestoreTopicsTask {
     restoreTopicsArgsWrapper.readProperties(args[0]);
 
     System.out.println("Restore configuration: " + restoreTopicsArgsWrapper.toString());
+
+
+    RestoreFacade restoreFacade = new RestoreFacade(restoreTopicsArgsWrapper);
+
+    restoreFacade.runRestoreProcess();
 
   }
 }

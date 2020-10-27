@@ -4,9 +4,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import lombok.Getter;
 import lombok.ToString;
@@ -15,14 +18,21 @@ import lombok.ToString;
 @ToString
 public class RestoreTopicsArgsWrapper {
 
+  public static final String AWS_S3_REGION = "aws.s3.region";
+  public static final String AWS_S3_ENDPOINT = "aws.s3.endpoint";
+  public static final String AWS_S3_PATH_STYLE_ACCESS_ENABLED = "aws.s3.pathStyleAccessEnabled";
+
   public static final String KAFKA_CONFIG_BACKUP_BUCKET = "aws.s3.bucketNameForConfig";
-  public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrapServers";
+  public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
 
   public static final String RESTORE_DRY_RUN = "restore.dryRun";
   public static final String RESTORE_TOPIC_LIST = "restore.topicList";
   public static final String RESTORE_TIME = "restore.time";
   public static final String RESTORE_HASH = "restore.hash";
 
+  private String awsEndpoint;
+  private String awsRegion;
+  private Boolean pathStyleAccessEnabled;
 
   private String configBackupBucket;
   private String kafkaBootstrapServers;
@@ -35,6 +45,16 @@ public class RestoreTopicsArgsWrapper {
     try (InputStream fileInputStream = new FileInputStream(path)) {
       Properties properties = new Properties();
       properties.load(fileInputStream);
+
+      awsRegion = properties.getProperty(AWS_S3_REGION);
+      if (awsRegion == null) {
+        throw new RestoreConfigurationException(
+            String.format("Missing required property %s", AWS_S3_REGION));
+      }
+
+      awsEndpoint = properties.getProperty(AWS_S3_ENDPOINT);
+
+      pathStyleAccessEnabled = Boolean.parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false"));
 
       kafkaBootstrapServers = properties.getProperty(KAFKA_BOOTSTRAP_SERVERS);
       if (kafkaBootstrapServers == null) {
@@ -79,5 +99,31 @@ public class RestoreTopicsArgsWrapper {
     public RestoreConfigurationException(String message) {
       super(message);
     }
+  }
+
+  public long getTimestampToRestore() {
+    return this.timeToRestore.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+  }
+
+  public Map<String, Object> adminConfig() {
+    Map<String, Object> props = new HashMap<>();
+    // First use envvars to populate certain props
+    String saslMechanism = System.getenv("CONNECT_ADMIN_SASL_MECHANISM");
+    if (saslMechanism != null) {
+      props.put("sasl.mechanism", saslMechanism);
+    }
+    String securityProtocol = System.getenv("CONNECT_ADMIN_SECURITY_PROTOCOL");
+    if (securityProtocol != null) {
+      props.put("security.protocol", securityProtocol);
+    }
+    // NOTE: this is secret, so we *cannot* put it in the task config
+    String saslJaasConfig = System.getenv("CONNECT_ADMIN_SASL_JAAS_CONFIG");
+    if (saslJaasConfig != null) {
+      props.put("sasl.jaas.config", saslJaasConfig);
+    }
+    // Then override with task config
+    props.put("bootstrap.servers", kafkaBootstrapServers);
+
+    return props;
   }
 }
