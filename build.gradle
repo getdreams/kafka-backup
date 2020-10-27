@@ -72,9 +72,7 @@ test {
 }
 
 task restoreTopics(type: JavaExec) {
-    if (project.hasProperty("configPath")) {
-        println "Topic restore configuration path ["+project.getProperty("configPath")+"]"
-    }
+    println "Topic restore configuration path [" + project.getProperty("configPath") + "]"
 
     configPath = project.getProperty("configPath")
 
