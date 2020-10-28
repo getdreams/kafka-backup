@@ -16,7 +16,11 @@ import lombok.ToString;
 
 @Getter
 @ToString
-public class RestoreTopicsArgsWrapper {
+public class RestoreArgsWrapper {
+
+  public static final String SHOULD_RESTORE_TOPICS = "restore.shouldRestoreTopics";
+  public static final String SHOULD_RESTORE_MESSAGES = "restore.shouldRestoreMessages";
+  public static final String SHOULD_RESTORE_OFFSETS = "restore.shouldRestoreOffsets";
 
   public static final String AWS_S3_REGION = "aws.s3.region";
   public static final String AWS_S3_ENDPOINT = "aws.s3.endpoint";
@@ -40,6 +44,9 @@ public class RestoreTopicsArgsWrapper {
   private LocalDateTime timeToRestore;
   private List<String> topicsToRestore;
   private boolean isDryRun;
+  private boolean shouldRestoreTopics;
+  private boolean shouldRestoreMessages;
+  private boolean shouldRestoreOffsets;
 
   public void readProperties(String path) {
     try (InputStream fileInputStream = new FileInputStream(path)) {
@@ -53,6 +60,16 @@ public class RestoreTopicsArgsWrapper {
       }
 
       awsEndpoint = properties.getProperty(AWS_S3_ENDPOINT);
+
+      shouldRestoreTopics = Boolean.parseBoolean(properties.getProperty(SHOULD_RESTORE_TOPICS, "false"));
+      shouldRestoreMessages = Boolean.parseBoolean(properties.getProperty(SHOULD_RESTORE_MESSAGES, "false"));
+      shouldRestoreOffsets = Boolean.parseBoolean(properties.getProperty(SHOULD_RESTORE_OFFSETS, "false"));
+
+      if (!(shouldRestoreOffsets || shouldRestoreMessages || shouldRestoreTopics)) {
+        throw new RestoreConfigurationException(
+            String.format("Neither topics, messages nor offsets are set to be restored. Set on of %s, %s, %s.",
+                SHOULD_RESTORE_TOPICS,SHOULD_RESTORE_MESSAGES, SHOULD_RESTORE_OFFSETS));
+      }
 
       pathStyleAccessEnabled = Boolean.parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false"));
 

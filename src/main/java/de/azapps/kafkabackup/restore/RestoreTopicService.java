@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
-import de.azapps.kafkabackup.common.topic.restore.RestoreTopicsArgsWrapper;
+import de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.io.IOException;
 import java.util.List;
@@ -25,7 +25,7 @@ class RestoreTopicService {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public void restoreTopics(RestoreTopicsArgsWrapper restoreTopicsArgsWrapper) {
+  public void restoreTopics(RestoreArgsWrapper restoreTopicsArgsWrapper) {
     TopicsConfig topicsConfig = getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore());
 
     restoreTopics(topicsConfig, restoreTopicsArgsWrapper.getTopicsToRestore(), restoreTopicsArgsWrapper.isDryRun());

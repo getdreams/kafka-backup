@@ -1,7 +1,7 @@
 package de.azapps.kafkabackup.restore;
 
 import de.azapps.kafkabackup.common.AdminClientService;
-import de.azapps.kafkabackup.common.topic.restore.RestoreTopicsArgsWrapper;
+import de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -13,9 +13,9 @@ public class RestoreFacade {
   private final RestoreMessageService restoreMessageService;
   private final RestoreTopicService restoreTopicService;
   private final RestoreOffsetService restoreOffsetService;
-  private RestoreTopicsArgsWrapper restoreTopicsArgsWrapper;
+  private RestoreArgsWrapper restoreTopicsArgsWrapper;
 
-  public RestoreFacade(RestoreTopicsArgsWrapper restoreTopicsArgsWrapper) {
+  public RestoreFacade(RestoreArgsWrapper restoreTopicsArgsWrapper) {
     this.restoreTopicsArgsWrapper = restoreTopicsArgsWrapper;
 
     final AdminClientService adminClientService = new AdminClientService(
@@ -33,8 +33,6 @@ public class RestoreFacade {
     restoreOffsetService = new RestoreOffsetService();
   }
 
-  //TODO discuss - I would remove facade and create 3 separate gradle tasks to run each of those steps independently
-  // but probably with common properties file
   public void runRestoreProcess() {
     restoreTopicService.restoreTopics(this.restoreTopicsArgsWrapper);
     restoreMessageService.restoreMessages();

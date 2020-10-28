@@ -14,7 +14,7 @@ public class RestoreTopicsTask {
 
     System.out.println("Restoring topics with config file: " + args[0]);
 
-    RestoreTopicsArgsWrapper restoreTopicsArgsWrapper = new RestoreTopicsArgsWrapper();
+    RestoreArgsWrapper restoreTopicsArgsWrapper = new RestoreArgsWrapper();
     restoreTopicsArgsWrapper.readProperties(args[0]);
 
     System.out.println("Restore configuration: " + restoreTopicsArgsWrapper.toString());
