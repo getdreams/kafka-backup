@@ -8,8 +8,6 @@ import de.azapps.kafkabackup.common.TopicsConfig;
 import de.azapps.kafkabackup.common.topic.restore.RestoreTopicsArgsWrapper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.io.IOException;
-import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,14 +26,7 @@ class RestoreTopicService {
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   public void restoreTopics(RestoreTopicsArgsWrapper restoreTopicsArgsWrapper) {
-    TopicsConfig topicsConfig;
-
-    if (restoreTopicsArgsWrapper.getHashToRestore() != null) {
-      topicsConfig = getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore());
-    }
-    else {
-      topicsConfig = getTopicsConfig(restoreTopicsArgsWrapper.getTimestampToRestore());
-    }
+    TopicsConfig topicsConfig = getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore());
 
     restoreTopics(topicsConfig, restoreTopicsArgsWrapper.getTopicsToRestore(), restoreTopicsArgsWrapper.isDryRun());
   }
@@ -44,10 +35,6 @@ class RestoreTopicService {
     log.info("Restoring topics. Dry run mode: {}", isDryRun);
     createTopics(config, topicsToRestore, isDryRun);
     log.info("All topics has been created");
-  }
-
-  private TopicsConfig getTopicsConfig(long restorationTimestamp) {
-    return null;
   }
 
   private TopicsConfig getTopicsConfig(String configChecksum) {
