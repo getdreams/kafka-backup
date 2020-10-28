@@ -101,7 +101,9 @@ public class RestoreArgsWrapper {
             String.format("Missing required property %s", RESTORE_HASH));
       }
 
-      topicsToRestore = List.of(properties.getProperty(RESTORE_TOPIC_LIST, "").split(","));
+      topicsToRestore =
+          properties.containsKey(RESTORE_TOPIC_LIST) ? List.of(properties.getProperty(RESTORE_TOPIC_LIST).split(","))
+              : List.of();
       isDryRun = Boolean.parseBoolean(properties.getProperty(RESTORE_DRY_RUN, "true"));
     } catch (IOException ex) {
       System.out.println(ex.getMessage());
