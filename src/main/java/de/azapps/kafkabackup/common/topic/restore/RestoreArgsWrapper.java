@@ -68,7 +68,7 @@ public class RestoreArgsWrapper {
       if (!(shouldRestoreOffsets || shouldRestoreMessages || shouldRestoreTopics)) {
         throw new RestoreConfigurationException(
             String.format("Neither topics, messages nor offsets are set to be restored. Set on of %s, %s, %s.",
-                SHOULD_RESTORE_TOPICS,SHOULD_RESTORE_MESSAGES, SHOULD_RESTORE_OFFSETS));
+                SHOULD_RESTORE_TOPICS, SHOULD_RESTORE_MESSAGES, SHOULD_RESTORE_OFFSETS));
       }
 
       pathStyleAccessEnabled = Boolean.parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false"));
@@ -96,12 +96,9 @@ public class RestoreArgsWrapper {
 
       hashToRestore = properties.getProperty(RESTORE_HASH);
 
-      if (hashToRestore == null && timeToRestore == null) {
-        throw new RestoreConfigurationException("Neither hash nor time to restore specified. One must be set.");
-      }
-
-      if (hashToRestore != null && timeToRestore != null) {
-        throw new RestoreConfigurationException("Both hash and time to restore specified. Only one allowed.");
+      if (hashToRestore == null) {
+        throw new RestoreConfigurationException(
+            String.format("Missing required property %s", RESTORE_HASH));
       }
 
       topicsToRestore = List.of(properties.getProperty(RESTORE_TOPIC_LIST, "").split(","));

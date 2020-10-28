@@ -9,6 +9,7 @@ import de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -18,15 +19,14 @@ import org.apache.kafka.clients.admin.NewTopic;
 @Slf4j
 @RequiredArgsConstructor
 class RestoreTopicService {
-
-  private final String bucketWithTopicConfigs = "__config";
   private final AdminClientService adminClientService;
   private final AwsS3Service awsS3Service;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   public void restoreTopics(RestoreArgsWrapper restoreTopicsArgsWrapper) {
-    TopicsConfig topicsConfig = getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore());
+    TopicsConfig topicsConfig = getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore(),
+        restoreTopicsArgsWrapper.getConfigBackupBucket());
 
     restoreTopics(topicsConfig, restoreTopicsArgsWrapper.getTopicsToRestore(), restoreTopicsArgsWrapper.isDryRun());
   }
@@ -37,24 +37,22 @@ class RestoreTopicService {
     log.info("All topics has been created");
   }
 
-  private TopicsConfig getTopicsConfig(String configChecksum) {
+  private TopicsConfig getTopicsConfig(String configChecksum, String bucketWithTopicConfigs) {
     S3Object file = awsS3Service.getFile(bucketWithTopicConfigs, configChecksum + ".json");
     try {
-      objectMapper.readValue(file.getObjectContent(), TopicsConfig.class);
+      return objectMapper.readValue(file.getObjectContent(), TopicsConfig.class);
     } catch (IOException e) {
       throw new RuntimeException("Unable to parse file: " + file.getKey());
     }
-    return null;
   }
 
 
   private List<NewTopic> createTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
 
+Supplier<Stream<TopicConfiguration>> streamSupplier = () -> config.getTopics().stream()
+    .filter(topic -> topicsToRestore.isEmpty() || topicsToRestore.contains(topic.getTopicName()));
 
-    Stream<TopicConfiguration> topics = config.getTopics().stream()
-        .filter(topic -> topicsToRestore.isEmpty() || topicsToRestore.contains(topic));
-
-    List<String> topicNames = topics.map(TopicConfiguration::getTopicName).collect(Collectors.toList());
+    List<String> topicNames = streamSupplier.get().map(TopicConfiguration::getTopicName).collect(Collectors.toList());
 
     List<String> existingTopics = adminClientService.describeAllTopics().stream().map(TopicConfiguration::getTopicName)
         .filter(topicNames::contains)
@@ -76,7 +74,7 @@ class RestoreTopicService {
       throw new RuntimeException("Some of the topics from configuration already exists");
     }
 
-    List<NewTopic> newTopicList = topics.map(topicConfiguration -> {
+    List<NewTopic> newTopicList = streamSupplier.get().map(topicConfiguration -> {
       NewTopic newTopic = new NewTopic(topicConfiguration.getTopicName(), topicConfiguration.getPartitionsNumber(),
           (short) topicConfiguration.getReplicationFactor());
 
