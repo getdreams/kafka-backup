@@ -73,6 +73,16 @@ class RestoreTopicService {
         .filter(topicNames::contains)
         .collect(Collectors.toList());
 
+    List<String> topicsWithoutConfigBackup = topicsToRestore.stream().filter(topic -> !topicNames.contains(topic))
+        .collect(Collectors.toList());
+
+    if(topicsWithoutConfigBackup.size() > 0) {
+      log.error("Some of the topics configured to be restored does not have configuration backup" +
+              " - restore has been canceled. Topics missing configuration backup topics: {}",
+          topicsWithoutConfigBackup);
+      throw new RuntimeException("Some of the topics configured to be restored does not have configuration backup");
+    }
+
     if(existingTopics.size() > 0) {
       log.error("Some of the topics from configuration already exists - restore has been canceled. Existing topics: {}",
           existingTopics);
