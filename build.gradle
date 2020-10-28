@@ -72,12 +72,15 @@ test {
 }
 
 task restoreTopics(type: JavaExec) {
-    println "Topic restore configuration path [" + project.getProperty("configPath") + "]"
+    if (project.hasProperty("configPath")) {
+        main = "de.azapps.kafkabackup.common.topic.restore.RestoreTopicsTask"
+        group = "Execution"
+        classpath = sourceSets.main.runtimeClasspath
 
-    configPath = project.getProperty("configPath")
+        println "Topic restore configuration path [" + project.getProperty("configPath") + "]"
 
-    group = "Execution"
-    classpath = sourceSets.main.runtimeClasspath
-    main = "de.azapps.kafkabackup.common.topic.restore.RestoreTopicsTask"
-    args configPath
+        configPath = project.getProperty("configPath")
+
+        args configPath
+    }
 }

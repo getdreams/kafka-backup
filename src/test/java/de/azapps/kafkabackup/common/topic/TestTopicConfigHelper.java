@@ -26,7 +26,8 @@ public class TestTopicConfigHelper {
   public static final String TOPIC_NAME_2 = "topic2";
 
   public static TopicConfiguration topicConfiguration(String topicName) {
-    return new TopicConfiguration(topicName, new Random().ints().findFirst().getAsInt());
+    return new TopicConfiguration(topicName, new Random().ints().findFirst().getAsInt(),
+        new Random().ints().findFirst().getAsInt());
   }
 
   public static Map<ConfigResource, Config> configuration(TestTopicConfiguration... testTopicConfigurations){
@@ -48,10 +49,16 @@ public class TestTopicConfigHelper {
   public static class TestTopicConfiguration {
     private final String topicName;
     private int partitionsNumber = new Random().ints().findFirst().getAsInt();
+    private int replicationFactor = new Random().ints().findFirst().getAsInt();
     private final Map<String, String> config = new TreeMap<>();
 
     public TestTopicConfiguration withNumberOfPartitions(int numberOfPartitions) {
       this.partitionsNumber = numberOfPartitions;
+      return this;
+    }
+
+    public TestTopicConfiguration withReplicationFactor(int replicationFactor) {
+      this.replicationFactor = replicationFactor;
       return this;
     }
 
@@ -66,7 +73,7 @@ public class TestTopicConfigHelper {
     }
 
     public TopicConfiguration build() {
-      TopicConfiguration topicConfiguration = new TopicConfiguration(topicName, partitionsNumber);
+      TopicConfiguration topicConfiguration = new TopicConfiguration(topicName, partitionsNumber, replicationFactor);
       topicConfiguration.setConfiguration(config);
       return topicConfiguration;
     }
