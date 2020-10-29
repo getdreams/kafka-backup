@@ -1,26 +1,33 @@
 package de.azapps.kafkabackup.common.topic.restore;
 
+import static de.azapps.kafkabackup.common.topic.restore.RestoreArg.optional;
+import static de.azapps.kafkabackup.common.topic.restore.RestoreArg.required;
+import static java.lang.Boolean.parseBoolean;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 
 @Getter
 @ToString
+@Builder
 public class RestoreArgsWrapper {
+
 
   public static final String SHOULD_RESTORE_TOPICS = "restore.shouldRestoreTopics";
   public static final String SHOULD_RESTORE_MESSAGES = "restore.shouldRestoreMessages";
   public static final String SHOULD_RESTORE_OFFSETS = "restore.shouldRestoreOffsets";
+  public static final String RESTORE_MODE = "restore.mode";
 
   public static final String AWS_S3_REGION = "aws.s3.region";
   public static final String AWS_S3_ENDPOINT = "aws.s3.endpoint";
@@ -34,86 +41,80 @@ public class RestoreArgsWrapper {
   public static final String RESTORE_TIME = "restore.time";
   public static final String RESTORE_HASH = "restore.hash";
 
-  private String awsEndpoint;
-  private String awsRegion;
-  private Boolean pathStyleAccessEnabled;
+  private final String awsEndpoint;
+  private final String awsRegion;
+  private final Boolean pathStyleAccessEnabled;
 
-  private String configBackupBucket;
-  private String kafkaBootstrapServers;
-  private String hashToRestore;
-  private LocalDateTime timeToRestore;
-  private List<String> topicsToRestore;
-  private boolean isDryRun;
-  private boolean shouldRestoreTopics;
-  private boolean shouldRestoreMessages;
-  private boolean shouldRestoreOffsets;
+  private final String configBackupBucket;
+  private final String kafkaBootstrapServers;
+  private final String hashToRestore;
+  private final LocalDateTime timeToRestore;
+  private final List<String> topicsToRestore;
+  private final boolean isDryRun;
+  private final RestoreMode restoreMode;
 
-  public void readProperties(String path) {
-    try (InputStream fileInputStream = new FileInputStream(path)) {
-      Properties properties = new Properties();
-      properties.load(fileInputStream);
+  public static final List<RestoreArg> args = List.of(
+      required(AWS_S3_REGION),
+      required(KAFKA_BOOTSTRAP_SERVERS),
+      required(KAFKA_CONFIG_BACKUP_BUCKET),
+      required(RESTORE_HASH),
+      required(RESTORE_MODE),
 
-      awsRegion = properties.getProperty(AWS_S3_REGION);
-      if (awsRegion == null) {
-        throw new RestoreConfigurationException(
-            String.format("Missing required property %s", AWS_S3_REGION));
-      }
+      optional(AWS_S3_PATH_STYLE_ACCESS_ENABLED),
+      optional(RESTORE_DRY_RUN),
+      optional(RESTORE_TOPIC_LIST),
+      optional(RESTORE_TIME)
+  );
 
-      awsEndpoint = properties.getProperty(AWS_S3_ENDPOINT);
+  public static RestoreArgsWrapper of(String path) {
+    RestoreArgsWrapperBuilder builder = RestoreArgsWrapper.builder();
 
-      shouldRestoreTopics = Boolean.parseBoolean(properties.getProperty(SHOULD_RESTORE_TOPICS, "false"));
-      shouldRestoreMessages = Boolean.parseBoolean(properties.getProperty(SHOULD_RESTORE_MESSAGES, "false"));
-      shouldRestoreOffsets = Boolean.parseBoolean(properties.getProperty(SHOULD_RESTORE_OFFSETS, "false"));
+    Properties properties = readPropertiesFromFile(path);
 
-      if (!(shouldRestoreOffsets || shouldRestoreMessages || shouldRestoreTopics)) {
-        throw new RestoreConfigurationException(
-            String.format("Neither topics, messages nor offsets are set to be restored. Set on of %s, %s, %s.",
-                SHOULD_RESTORE_TOPICS, SHOULD_RESTORE_MESSAGES, SHOULD_RESTORE_OFFSETS));
-      }
+    validateProperties(properties);
 
-      pathStyleAccessEnabled = Boolean.parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false"));
+    builder.awsRegion(properties.getProperty(AWS_S3_REGION));
+    builder.awsEndpoint(properties.getProperty(AWS_S3_ENDPOINT));
+    builder.kafkaBootstrapServers(properties.getProperty(KAFKA_BOOTSTRAP_SERVERS));
+    builder.configBackupBucket(properties.getProperty(KAFKA_CONFIG_BACKUP_BUCKET));
+    builder.hashToRestore(properties.getProperty(RESTORE_HASH));
+    builder.restoreMode(RestoreMode.valueOf(properties.getProperty(RESTORE_MODE)));
 
-      kafkaBootstrapServers = properties.getProperty(KAFKA_BOOTSTRAP_SERVERS);
-      if (kafkaBootstrapServers == null) {
-        throw new RestoreConfigurationException(
-            String.format("Missing required property %s", KAFKA_BOOTSTRAP_SERVERS));
-      }
+    builder.pathStyleAccessEnabled(parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false")));
+    builder.isDryRun(parseBoolean(properties.getProperty(RESTORE_DRY_RUN, "true")));
+    builder.topicsToRestore(
+        properties.containsKey(RESTORE_TOPIC_LIST) ? List.of(properties.getProperty(RESTORE_TOPIC_LIST).split(","))
+            : List.of());
 
-      configBackupBucket = properties.getProperty(KAFKA_CONFIG_BACKUP_BUCKET);
-      if (configBackupBucket == null) {
-        throw new RestoreConfigurationException(
-            String.format("Missing required property %s", KAFKA_CONFIG_BACKUP_BUCKET));
-      }
+    builder.timeToRestore(getRestoreTime(properties));
 
-      try {
-        final String restoreTimeString = properties.getProperty(RESTORE_TIME);
-        if (restoreTimeString != null) {
-          timeToRestore = LocalDateTime.parse(restoreTimeString, DateTimeFormatter.ISO_DATE_TIME);
-        }
-      } catch (DateTimeParseException ex) {
-        throw new RestoreConfigurationException("Could not parse" + RESTORE_TIME + " . Expected ISO_DATE_TIME format.");
-      }
+    return builder.build();
+}
 
-      hashToRestore = properties.getProperty(RESTORE_HASH);
-
-      if (hashToRestore == null) {
-        throw new RestoreConfigurationException(
-            String.format("Missing required property %s", RESTORE_HASH));
-      }
-
-      topicsToRestore =
-          properties.containsKey(RESTORE_TOPIC_LIST) ? List.of(properties.getProperty(RESTORE_TOPIC_LIST).split(","))
-              : List.of();
-      isDryRun = Boolean.parseBoolean(properties.getProperty(RESTORE_DRY_RUN, "true"));
-    } catch (IOException ex) {
-      System.out.println(ex.getMessage());
-    }
+  private static LocalDateTime getRestoreTime(Properties properties) {
+      return Optional.ofNullable(properties.getProperty(RESTORE_TIME))
+          .map((restoreTimeString) ->
+              LocalDateTime.parse(restoreTimeString, DateTimeFormatter.ISO_DATE_TIME))
+          .orElse(null);
   }
 
-  public class RestoreConfigurationException extends RuntimeException {
+  private static void validateProperties(Properties properties) {
+    args.stream().filter(RestoreArg::isRequired).forEach(restoreArg -> {
+      if (properties.get(restoreArg.getName()) == null) {
+        throw new RestoreConfigurationException(
+            String.format("Missing required property: %s", restoreArg.getName()));
+      }
+    });
+  }
 
-    public RestoreConfigurationException(String message) {
-      super(message);
+  private static Properties readPropertiesFromFile(String path) {
+    try {
+      InputStream fileInputStream = new FileInputStream(path);
+      Properties properties = new Properties();
+      properties.load(fileInputStream);
+      return properties;
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to load properties from file", e);
     }
   }
 

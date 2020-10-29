@@ -19,6 +19,7 @@ import org.apache.kafka.clients.admin.NewTopic;
 @Slf4j
 @RequiredArgsConstructor
 class RestoreTopicService {
+
   private final AdminClientService adminClientService;
   private final AwsS3Service awsS3Service;
 
@@ -31,7 +32,7 @@ class RestoreTopicService {
     restoreTopics(topicsConfig, restoreTopicsArgsWrapper.getTopicsToRestore(), restoreTopicsArgsWrapper.isDryRun());
   }
 
-   void restoreTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
+  private void restoreTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
     log.info("Restoring topics. Dry run mode: {}", isDryRun);
     createTopics(config, topicsToRestore, isDryRun);
     log.info("All topics has been created");
@@ -42,15 +43,15 @@ class RestoreTopicService {
     try {
       return objectMapper.readValue(file.getObjectContent(), TopicsConfig.class);
     } catch (IOException e) {
-      throw new RuntimeException("Unable to parse file: " + file.getKey());
+      throw new RuntimeException("Unable to parse file: " + file.getKey(), e);
     }
   }
 
 
   private List<NewTopic> createTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
 
-Supplier<Stream<TopicConfiguration>> streamSupplier = () -> config.getTopics().stream()
-    .filter(topic -> topicsToRestore.isEmpty() || topicsToRestore.contains(topic.getTopicName()));
+    Supplier<Stream<TopicConfiguration>> streamSupplier = () -> config.getTopics().stream()
+        .filter(topic -> topicsToRestore.isEmpty() || topicsToRestore.contains(topic.getTopicName()));
 
     List<String> topicNames = streamSupplier.get().map(TopicConfiguration::getTopicName).collect(Collectors.toList());
 
@@ -61,14 +62,14 @@ Supplier<Stream<TopicConfiguration>> streamSupplier = () -> config.getTopics().s
     List<String> topicsWithoutConfigBackup = topicsToRestore.stream().filter(topic -> !topicNames.contains(topic))
         .collect(Collectors.toList());
 
-    if(topicsWithoutConfigBackup.size() > 0) {
+    if (topicsWithoutConfigBackup.size() > 0) {
       log.error("Some of the topics configured to be restored does not have configuration backup" +
               " - restore has been canceled. Topics missing configuration backup topics: {}",
           topicsWithoutConfigBackup);
       throw new RuntimeException("Some of the topics configured to be restored does not have configuration backup");
     }
 
-    if(existingTopics.size() > 0) {
+    if (existingTopics.size() > 0) {
       log.error("Some of the topics from configuration already exists - restore has been canceled. Existing topics: {}",
           existingTopics);
       throw new RuntimeException("Some of the topics from configuration already exists");
@@ -85,8 +86,7 @@ Supplier<Stream<TopicConfiguration>> streamSupplier = () -> config.getTopics().s
 
     if (!isDryRun) {
       adminClientService.createTopics(newTopicList);
-    }
-    else {
+    } else {
       log.info("DryRun mode. Topics to be created: \n{}", newTopicList);
     }
 
