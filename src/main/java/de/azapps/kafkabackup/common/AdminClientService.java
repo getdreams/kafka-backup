@@ -6,11 +6,14 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.Config;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.config.ConfigResource.Type;
 
@@ -46,7 +49,8 @@ public class AdminClientService {
     }
   }
 
+  @SneakyThrows
   public void createTopics(List<NewTopic> newTopicList) {
-    adminClient.createTopics(newTopicList).all();
+    adminClient.createTopics(newTopicList).all().get();
   }
 }
