@@ -6,10 +6,14 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.Config;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.ListTopicsOptions;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.TopicDescription;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.config.ConfigResource;
 import org.apache.kafka.common.config.ConfigResource.Type;
 
@@ -24,7 +28,8 @@ public class AdminClientService {
       Set<String> topicNames = adminClient.listTopics(options).names().get();
       Map<String, TopicDescription> topicsDescription = adminClient.describeTopics(topicNames).all().get();
       return topicsDescription.entrySet().stream()
-          .map(entry -> new TopicConfiguration(entry.getKey(), entry.getValue().partitions().size()))
+          .map(entry -> new TopicConfiguration(entry.getKey(), entry.getValue().partitions().size(),
+              entry.getValue().partitions().get(0).replicas().size()))
           .collect(Collectors.toList());
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e.getMessage(), e);
@@ -44,4 +49,8 @@ public class AdminClientService {
     }
   }
 
+  @SneakyThrows
+  public void createTopics(List<NewTopic> newTopicList) {
+    adminClient.createTopics(newTopicList).all().get();
+  }
 }

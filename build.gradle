@@ -70,3 +70,17 @@ ext {
 test {
     useJUnitPlatform()
 }
+
+task restoreTopics(type: JavaExec) {
+    if (project.hasProperty("configPath")) {
+        main = "de.azapps.kafkabackup.common.topic.restore.RestoreTopicsTask"
+        group = "Execution"
+        classpath = sourceSets.main.runtimeClasspath
+
+        println "Topic restore configuration path [" + project.getProperty("configPath") + "]"
+
+        configPath = project.getProperty("configPath")
+
+        args configPath
+    }
+}

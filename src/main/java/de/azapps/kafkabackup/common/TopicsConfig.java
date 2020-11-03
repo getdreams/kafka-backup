@@ -1,6 +1,8 @@
 package de.azapps.kafkabackup.common;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
@@ -12,7 +14,6 @@ import lombok.EqualsAndHashCode.Exclude;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
 
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Data
 public class TopicsConfig {
 
@@ -22,10 +23,18 @@ public class TopicsConfig {
   @JsonIgnore
   private final ObjectMapper mapper = new ObjectMapper();
 
+  @JsonCreator
+  public TopicsConfig(
+      @JsonProperty("timestamp") long timestamp,
+      @JsonProperty("topics") List<TopicConfiguration> topics) {
+    this.timestamp = timestamp;
+    this.topics = topics;
+  }
+
   public static TopicsConfig of(List<TopicConfiguration> topics) {
     List<TopicConfiguration> newList = new ArrayList<>(topics);
     newList.sort(Comparator.comparing(TopicConfiguration::getTopicName));
-    return new TopicsConfig(System.currentTimeMillis(),newList);
+    return new TopicsConfig(System.currentTimeMillis(), newList);
   }
 
   public String checksum() {

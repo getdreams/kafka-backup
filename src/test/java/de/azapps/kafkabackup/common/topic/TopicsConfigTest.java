@@ -70,12 +70,14 @@ class TopicsConfigTest {
         .withNumberOfPartitions(3)
         .withConfig(PROPERTY_1, VALUE_1)
         .withConfig(PROPERTY_2, VALUE_2)
+        .withReplicationFactor(2)
         .build();
 
     TopicConfiguration configForFirstTopicWithDifferentOrder = forTestTopic(TOPIC_NAME_1)
         .withNumberOfPartitions(3)
         .withConfig(PROPERTY_2, VALUE_2)
         .withConfig(PROPERTY_1, VALUE_1)
+        .withReplicationFactor(2)
         .build();
 
     // when
