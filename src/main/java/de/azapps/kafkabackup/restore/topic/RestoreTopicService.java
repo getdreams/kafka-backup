@@ -1,32 +1,36 @@
-package de.azapps.kafkabackup.restore;
+package de.azapps.kafkabackup.restore.topic;
 
-import com.amazonaws.services.s3.model.S3Object;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
-import de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper;
+import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
+import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
-import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.NewTopic;
 
 @Slf4j
-@RequiredArgsConstructor
+public
 class RestoreTopicService {
 
   private final AdminClientService adminClientService;
   private final AwsS3Service awsS3Service;
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final RestoreConfigurationHelper restoreConfigurationHelper;
+
+  public RestoreTopicService(AdminClientService adminClientService, AwsS3Service awsS3Service) {
+    this.adminClientService = adminClientService;
+    this.awsS3Service = awsS3Service;
+
+    restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service);
+  }
 
   public void restoreTopics(RestoreArgsWrapper restoreTopicsArgsWrapper) {
-    TopicsConfig topicsConfig = getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore(),
+    TopicsConfig topicsConfig = restoreConfigurationHelper.getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore(),
         restoreTopicsArgsWrapper.getConfigBackupBucket());
 
     restoreTopics(topicsConfig, restoreTopicsArgsWrapper.getTopicsToRestore(), restoreTopicsArgsWrapper.isDryRun());
@@ -37,16 +41,6 @@ class RestoreTopicService {
     createTopics(config, topicsToRestore, isDryRun);
     log.info("All topics has been created");
   }
-
-  private TopicsConfig getTopicsConfig(String configChecksum, String bucketWithTopicConfigs) {
-    S3Object file = awsS3Service.getFile(bucketWithTopicConfigs, configChecksum + ".json");
-    try {
-      return objectMapper.readValue(file.getObjectContent(), TopicsConfig.class);
-    } catch (IOException e) {
-      throw new RuntimeException("Unable to parse file: " + file.getKey(), e);
-    }
-  }
-
 
   private List<NewTopic> createTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
 

@@ -1,8 +1,9 @@
-package de.azapps.kafkabackup.common.topic.restore;
+package de.azapps.kafkabackup.restore.common;
 
-import static de.azapps.kafkabackup.common.topic.restore.RestoreArg.optional;
-import static de.azapps.kafkabackup.common.topic.restore.RestoreArg.required;
+import static de.azapps.kafkabackup.restore.common.RestoreArg.optional;
+import static de.azapps.kafkabackup.restore.common.RestoreArg.required;
 import static java.lang.Boolean.parseBoolean;
+import static java.lang.Integer.parseInt;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +42,8 @@ public class RestoreArgsWrapper {
   public static final String RESTORE_TIME = "restore.time";
   public static final String RESTORE_HASH = "restore.hash";
 
+  public static final String RESTORE_MESSAGES_MAX_THREADS = "restore.messages.maxThreads";
+
   private final String awsEndpoint;
   private final String awsRegion;
   private final Boolean pathStyleAccessEnabled;
@@ -52,6 +55,7 @@ public class RestoreArgsWrapper {
   private final List<String> topicsToRestore;
   private final boolean isDryRun;
   private final RestoreMode restoreMode;
+  private final int restoreMessagesMaxThreads;
 
   public static final List<RestoreArg> args = List.of(
       required(AWS_S3_REGION),
@@ -63,7 +67,8 @@ public class RestoreArgsWrapper {
       optional(AWS_S3_PATH_STYLE_ACCESS_ENABLED),
       optional(RESTORE_DRY_RUN),
       optional(RESTORE_TOPIC_LIST),
-      optional(RESTORE_TIME)
+      optional(RESTORE_TIME),
+      optional(RESTORE_MESSAGES_MAX_THREADS)
   );
 
   public static RestoreArgsWrapper of(String path) {
@@ -87,6 +92,7 @@ public class RestoreArgsWrapper {
             : List.of());
 
     builder.timeToRestore(getRestoreTime(properties));
+    builder.restoreMessagesMaxThreads(parseInt(properties.getProperty(RESTORE_MESSAGES_MAX_THREADS, "1")));
 
     return builder.build();
 }

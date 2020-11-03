@@ -1,7 +1,9 @@
 package de.azapps.kafkabackup.restore;
 
 import de.azapps.kafkabackup.common.AdminClientService;
-import de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper;
+import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
+import de.azapps.kafkabackup.restore.message.RestoreMessageService;
+import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -29,7 +31,7 @@ public class RestoreFacade {
         adminClientService,
         awsS3Service);
 
-    restoreMessageService = new RestoreMessageService();
+    restoreMessageService = new RestoreMessageService(awsS3Service, adminClientService, restoreTopicsArgsWrapper);
     restoreOffsetService = new RestoreOffsetService();
   }
 

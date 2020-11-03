@@ -1,7 +1,8 @@
-package de.azapps.kafkabackup.common.topic.restore;
+package de.azapps.kafkabackup.restore.topic;
 
 
 import de.azapps.kafkabackup.restore.RestoreFacade;
+import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import java.util.Arrays;
 
 public class RestoreTopicsTask {
