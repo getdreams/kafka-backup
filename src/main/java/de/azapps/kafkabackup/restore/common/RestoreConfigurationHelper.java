@@ -1,4 +1,4 @@
-package de.azapps.kafkabackup.restore;
+package de.azapps.kafkabackup.restore.common;
 
 import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,4 +1,4 @@
-package de.azapps.kafkabackup.restore;
+package de.azapps.kafkabackup.restore.message;
 
 public enum MessageRestorationStatus {
   WAITING,

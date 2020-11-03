@@ -1,9 +1,11 @@
-package de.azapps.kafkabackup.restore;
+package de.azapps.kafkabackup.restore.message;
 
+import static java.util.stream.Collectors.groupingBy;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
-import de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper;
+import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
+import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,23 +21,27 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-class RestoreMessageService {
+public class RestoreMessageService {
 
   private final AdminClientService adminClientService;
   ExecutorService executor;
   private final RestoreConfigurationHelper restoreConfigurationHelper;
   private final RestoreArgsWrapper restoreArgsWrapper;
-  private Map<String, PartitionWriterWorker> partitionWriters;
+  private Map<String, PartitionMessageWriterWorker> partitionWriters;
 
   public RestoreMessageService(AwsS3Service awsS3Service, AdminClientService adminClientService,
       RestoreArgsWrapper restoreArgsWrapper) {
     this.restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service);
     this.restoreArgsWrapper = restoreArgsWrapper;
     this.adminClientService = adminClientService;
-    this.executor = Executors.newFixedThreadPool(5);
+
+    final int restoreMessagesMaxThreads = restoreArgsWrapper.getRestoreMessagesMaxThreads();
+    this.executor = Executors.newFixedThreadPool(restoreMessagesMaxThreads);
+
+    log.info("RestoreMessageService initiated. Max number of threads: " + restoreMessagesMaxThreads);
   }
 
-  void restoreMessages() {
+  public void restoreMessages() {
     TopicsConfig topicsConfig = restoreConfigurationHelper.getTopicsConfig(restoreArgsWrapper.getHashToRestore(),
         restoreArgsWrapper.getConfigBackupBucket());
 
@@ -44,25 +50,35 @@ class RestoreMessageService {
 
     partitionsToRestore.stream()
         .forEach(partitionToRestore -> {
-          executor.submit(new PartitionWriterWorker(partitionToRestore,
+          executor.submit(new PartitionMessageWriterWorker(partitionToRestore,
               partitionToRestore.getTopicPartitionId()));
         });
 
     while (anyPartitionWriterWaitingOrRunning()) {
       try {
-
+        log.info(
+            "Waiting for workers to finish. Partition message workers info: " + partitionMessageWriterWorkersInfo());
         Thread.sleep(5000L);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
     }
+
+    log.info("All workers finished.Partition message workers info: " + partitionMessageWriterWorkersInfo());
   }
 
   private boolean anyPartitionWriterWaitingOrRunning() {
     return partitionWriters.entrySet()
         .stream()
         .anyMatch(partitionWriter ->
-            partitionWriter.getValue().getTopicPartitionToRestore().getMessageRestorationStatus().ordinal() <= MessageRestorationStatus.RUNNING.ordinal());
+            partitionWriter.getValue().getTopicPartitionToRestore().getMessageRestorationStatus().ordinal()
+                <= MessageRestorationStatus.RUNNING.ordinal());
+  }
+
+  private Map<MessageRestorationStatus, List<PartitionMessageWriterWorker>> partitionMessageWriterWorkersInfo() {
+    return partitionWriters.values()
+        .stream()
+        .collect(groupingBy(worker -> worker.getTopicPartitionToRestore().getMessageRestorationStatus()));
   }
 
   private List<TopicPartitionToRestore> getPartitionsToRestore(TopicsConfig config, List<String> topicsToRestore) {
@@ -107,11 +123,10 @@ class RestoreMessageService {
 
     final TopicConfiguration topicConfiguration;
     final int partitionNumber;
-    MessageRestorationStatus messageRestorationStatus = MessageRestorationStatus.WAITING;
+    private MessageRestorationStatus messageRestorationStatus;
 
     public String getTopicPartitionId() {
       return topicConfiguration.getTopicName() + "." + partitionNumber;
     }
-
   }
 }

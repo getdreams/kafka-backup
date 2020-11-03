@@ -1,4 +1,4 @@
-package de.azapps.kafkabackup.common.topic.restore;
+package de.azapps.kafkabackup.restore.common;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

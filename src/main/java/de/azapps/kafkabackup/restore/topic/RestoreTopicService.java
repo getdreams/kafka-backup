@@ -1,10 +1,10 @@
-package de.azapps.kafkabackup.restore;
+package de.azapps.kafkabackup.restore.topic;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
-import de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper;
+import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
+import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.List;
 import java.util.function.Supplier;
@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.NewTopic;
 
 @Slf4j
+public
 class RestoreTopicService {
 
   private final AdminClientService adminClientService;
@@ -21,7 +22,7 @@ class RestoreTopicService {
 
   private final RestoreConfigurationHelper restoreConfigurationHelper;
 
-  RestoreTopicService(AdminClientService adminClientService, AwsS3Service awsS3Service) {
+  public RestoreTopicService(AdminClientService adminClientService, AwsS3Service awsS3Service) {
     this.adminClientService = adminClientService;
     this.awsS3Service = awsS3Service;
 
