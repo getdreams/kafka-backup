@@ -25,11 +25,13 @@ public class S3PartitionWriter implements PartitionWriter {
 
   private S3BatchWriter batchWriter;
   private Long lastCommittableOffset = null; // Nothing written so far, so nothing to commit
+  private Long lastBufferedOffset = -1L;
 
   @Override
   public void append(Record record) throws PartitionException {
-    if (batchWriter == null || record.kafkaOffset() > batchWriter.getEndOffset()) {
+    if (record.kafkaOffset() > lastBufferedOffset) {
       buffer.add(record);
+      lastBufferedOffset = record.kafkaOffset();
     } else {
       log.debug("Skipping message already added to buffer.");
     }
@@ -48,15 +50,9 @@ public class S3PartitionWriter implements PartitionWriter {
 
   private void writeToBatch(Record record) {
     try {
-      if (record.kafkaOffset() <= batchWriter.getEndOffset()) {
-        log.debug("Skipping message already added to batch.");
-      }
       if (batchWriter == null) {
         batchWriter = new S3BatchWriter(awsS3Service, bucketName, topicPartition, record);
       } else {
-        if (record.kafkaOffset() <= batchWriter.getEndOffset()) {
-          log.debug("Skipping message already added to batch.");
-        }
         batchWriter.append(record);
       }
     } catch (IOException e) {
