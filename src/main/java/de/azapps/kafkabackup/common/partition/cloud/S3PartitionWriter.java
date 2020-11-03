@@ -26,15 +26,12 @@ public class S3PartitionWriter implements PartitionWriter {
   private S3BatchWriter batchWriter;
   private Long lastCommittableOffset = null; // Nothing written so far, so nothing to commit
 
-  private boolean forceCommit = false;
-
   @Override
   public void append(Record record) throws PartitionException {
     if (record.kafkaOffset() > batchWriter.getEndOffset()) {
       buffer.add(record);
     } else {
       log.debug("Skipping message already added to buffer.");
-      forceCommit = true;
     }
   }
 
@@ -46,7 +43,6 @@ public class S3PartitionWriter implements PartitionWriter {
       maybeCommitBasedOnMessages();
     }
 
-    maybeForceCommitBecauseOfRepeatedOffset(forceCommit);
     maybeCommitBasedOnTime();
   }
 
@@ -54,7 +50,6 @@ public class S3PartitionWriter implements PartitionWriter {
     try {
       if (record.kafkaOffset() <= batchWriter.getEndOffset()) {
         log.debug("Skipping message already added to batch.");
-        forceCommit = true;
       }
       if (batchWriter == null) {
         batchWriter = new S3BatchWriter(awsS3Service, bucketName, topicPartition, record);
@@ -63,14 +58,6 @@ public class S3PartitionWriter implements PartitionWriter {
       }
     } catch (IOException e) {
       throw new PartitionException(e);
-    }
-  }
-
-  private void maybeForceCommitBecauseOfRepeatedOffset(boolean shouldCommit) {
-    if (shouldCommit) {
-      log.info("Commit {} based on repeated message offset", batchWriter.getObjectKey());
-      commitCurrentBatch();
-      forceCommit = false;
     }
   }
 
