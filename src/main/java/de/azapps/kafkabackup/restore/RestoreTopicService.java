@@ -29,7 +29,30 @@ class RestoreTopicService {
     TopicsConfig topicsConfig = getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore(),
         restoreTopicsArgsWrapper.getConfigBackupBucket());
 
-    restoreTopics(topicsConfig, restoreTopicsArgsWrapper.getTopicsToRestore(), restoreTopicsArgsWrapper.isDryRun());
+    restoreTopics(topicsConfig, getTopicsList(restoreTopicsArgsWrapper, topicsConfig),
+        restoreTopicsArgsWrapper.isDryRun());
+  }
+
+  private List<String> getTopicsList(RestoreArgsWrapper restoreArgsWrapper, TopicsConfig config) {
+    switch (restoreArgsWrapper.getTopicsListMode()) {
+      case WHITELIST:
+        return config.getTopics().stream()
+            .filter(topicConfiguration -> restoreArgsWrapper.getTopicsList().contains(topicConfiguration.getTopicName()))
+            .map(TopicConfiguration::getTopicName)
+            .collect(Collectors.toList());
+      case BLACKLIST:
+        return config.getTopics().stream()
+            .filter(topicConfiguration -> !restoreArgsWrapper.getTopicsList().contains(topicConfiguration.getTopicName()))
+            .map(TopicConfiguration::getTopicName)
+            .collect(Collectors.toList());
+      case REGEXP:
+        return config.getTopics().stream()
+            .filter(topicConfiguration -> topicConfiguration.getTopicName().matches(restoreArgsWrapper.getTopicsRegexp()))
+            .map(TopicConfiguration::getTopicName)
+            .collect(Collectors.toList());
+      default:
+        return null;
+    }
   }
 
   private void restoreTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
@@ -51,7 +74,7 @@ class RestoreTopicService {
   private List<NewTopic> createTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
 
     Supplier<Stream<TopicConfiguration>> streamSupplier = () -> config.getTopics().stream()
-        .filter(topic -> topicsToRestore.isEmpty() || topicsToRestore.contains(topic.getTopicName()));
+        .filter(topic -> topicsToRestore == null || topicsToRestore.contains(topic.getTopicName()));
 
     List<String> topicNames = streamSupplier.get().map(TopicConfiguration::getTopicName).collect(Collectors.toList());
 
@@ -59,14 +82,17 @@ class RestoreTopicService {
         .filter(topicNames::contains)
         .collect(Collectors.toList());
 
-    List<String> topicsWithoutConfigBackup = topicsToRestore.stream().filter(topic -> !topicNames.contains(topic))
-        .collect(Collectors.toList());
+    if (topicsToRestore != null) {
+      List<String> topicsWithoutConfigBackup = topicsToRestore.stream()
+          .filter(topic -> !topicNames.contains(topic))
+          .collect(Collectors.toList());
 
-    if (topicsWithoutConfigBackup.size() > 0) {
-      log.error("Some of the topics configured to be restored does not have configuration backup" +
-              " - restore has been canceled. Topics missing configuration backup topics: {}",
-          topicsWithoutConfigBackup);
-      throw new RuntimeException("Some of the topics configured to be restored does not have configuration backup");
+      if (topicsWithoutConfigBackup.size() > 0) {
+        log.error("Some of the topics configured to be restored does not have configuration backup" +
+                " - restore has been canceled. Topics missing configuration backup topics: {}",
+            topicsWithoutConfigBackup);
+        throw new RuntimeException("Some of the topics configured to be restored does not have configuration backup");
+      }
     }
 
     if (existingTopics.size() > 0) {

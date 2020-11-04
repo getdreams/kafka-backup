@@ -1,7 +1,10 @@
 package de.azapps.kafkabackup.common.topic.restore;
 
-import static de.azapps.kafkabackup.common.topic.restore.RestoreArg.optional;
-import static de.azapps.kafkabackup.common.topic.restore.RestoreArg.required;
+import static de.azapps.kafkabackup.common.topic.restore.RestoreArg.param;
+import static de.azapps.kafkabackup.common.topic.restore.RestoreArg.singleParam;
+import static de.azapps.kafkabackup.common.topic.restore.RestoreMode.MESSAGES;
+import static de.azapps.kafkabackup.common.topic.restore.RestoreMode.OFFSETS;
+import static de.azapps.kafkabackup.common.topic.restore.RestoreMode.TOPICS;
 import static java.lang.Boolean.parseBoolean;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,7 +40,8 @@ public class RestoreArgsWrapper {
   public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
 
   public static final String RESTORE_DRY_RUN = "restore.dryRun";
-  public static final String RESTORE_TOPIC_LIST = "restore.topicList";
+  public static final String RESTORE_TOPIC_LIST_MODE = "restore.topicsList.mode";
+  public static final String RESTORE_TOPIC_LIST_VALUE = "restore.topicsList.value";
   public static final String RESTORE_TIME = "restore.time";
   public static final String RESTORE_HASH = "restore.hash";
 
@@ -49,21 +53,25 @@ public class RestoreArgsWrapper {
   private final String kafkaBootstrapServers;
   private final String hashToRestore;
   private final LocalDateTime timeToRestore;
-  private final List<String> topicsToRestore;
+  private final TopicsListMode topicsListMode;
+  private final List<String> topicsList;
+  private final String topicsRegexp;
   private final boolean isDryRun;
   private final RestoreMode restoreMode;
 
   public static final List<RestoreArg> args = List.of(
-      required(AWS_S3_REGION),
-      required(KAFKA_BOOTSTRAP_SERVERS),
-      required(KAFKA_CONFIG_BACKUP_BUCKET),
-      required(RESTORE_HASH),
-      required(RESTORE_MODE),
+      param(singleParam(AWS_S3_REGION).isRequired(true)),
+      param(singleParam(KAFKA_BOOTSTRAP_SERVERS).isRequired(true)),
+      param(singleParam(KAFKA_CONFIG_BACKUP_BUCKET).isRequired(true)),
+      param(singleParam(RESTORE_HASH).isRequired(true)),
+      param(singleParam(RESTORE_MODE).isRequired(true)
+          .allowedValues(List.of(MESSAGES.name(), TOPICS.name(), OFFSETS.name()))),
 
-      optional(AWS_S3_PATH_STYLE_ACCESS_ENABLED),
-      optional(RESTORE_DRY_RUN),
-      optional(RESTORE_TOPIC_LIST),
-      optional(RESTORE_TIME)
+      param(singleParam(AWS_S3_PATH_STYLE_ACCESS_ENABLED).isRequired(false)),
+      param(singleParam(RESTORE_DRY_RUN).isRequired(false)),
+      param(singleParam(RESTORE_TOPIC_LIST_MODE).isRequired(false)),
+      param(singleParam(RESTORE_TOPIC_LIST_VALUE).isRequired(false)),
+      param(singleParam(RESTORE_TIME).isRequired(false))
   );
 
   public static RestoreArgsWrapper of(String path) {
@@ -82,9 +90,20 @@ public class RestoreArgsWrapper {
 
     builder.pathStyleAccessEnabled(parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false")));
     builder.isDryRun(parseBoolean(properties.getProperty(RESTORE_DRY_RUN, "true")));
-    builder.topicsToRestore(
-        properties.containsKey(RESTORE_TOPIC_LIST) ? List.of(properties.getProperty(RESTORE_TOPIC_LIST).split(","))
-            : List.of());
+
+    TopicsListMode topicListMode = Optional.ofNullable(properties.getProperty(RESTORE_TOPIC_LIST_MODE))
+        .map(TopicsListMode::valueOf)
+        .orElse(TopicsListMode.ALL_TOPICS);
+
+    builder.topicsListMode(topicListMode);
+    switch (topicListMode) {
+      case BLACKLIST:
+      case WHITELIST:
+        builder.topicsList(List.of(properties.getProperty(RESTORE_TOPIC_LIST_VALUE).split(",")));
+        break;
+      case REGEXP:
+        builder.topicsRegexp(properties.getProperty(RESTORE_TOPIC_LIST_VALUE));
+    }
 
     builder.timeToRestore(getRestoreTime(properties));
 
@@ -99,10 +118,15 @@ public class RestoreArgsWrapper {
   }
 
   private static void validateProperties(Properties properties) {
-    args.stream().filter(RestoreArg::isRequired).forEach(restoreArg -> {
-      if (properties.get(restoreArg.getName()) == null) {
-        throw new RestoreConfigurationException(
-            String.format("Missing required property: %s", restoreArg.getName()));
+    args.forEach(restoreArg -> {
+      if (restoreArg.isRequired()) {
+        restoreArg.getNames().stream()
+            .filter(paramName -> properties.get(paramName) == null)
+            .findAny()
+            .ifPresent((arg) -> {
+              throw new RestoreConfigurationException(
+                  String.format("Missing required property: %s", arg));
+            });
       }
     });
   }

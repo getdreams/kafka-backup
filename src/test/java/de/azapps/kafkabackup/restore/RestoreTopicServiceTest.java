@@ -13,6 +13,7 @@ import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
 import de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper;
+import de.azapps.kafkabackup.common.topic.restore.TopicsListMode;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.io.ByteArrayInputStream;
 import java.util.Collections;
@@ -57,7 +58,7 @@ class RestoreTopicServiceTest {
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
 
     RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
-        .topicsToRestore(Collections.emptyList())
+        .topicsListMode(TopicsListMode.ALL_TOPICS)
         .build();
 
 
@@ -88,7 +89,8 @@ class RestoreTopicServiceTest {
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
 
     RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
-        .topicsToRestore(List.of("topic1"))
+        .topicsList(List.of("topic1"))
+        .topicsListMode(TopicsListMode.WHITELIST)
         .build();
 
 
@@ -120,7 +122,8 @@ class RestoreTopicServiceTest {
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
 
     RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
-        .topicsToRestore(List.of("topic1"))
+        .topicsList(List.of("topic1"))
+        .topicsListMode(TopicsListMode.WHITELIST)
         .isDryRun(true)
         .build();
 
@@ -145,7 +148,8 @@ class RestoreTopicServiceTest {
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
 
     RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
-        .topicsToRestore(List.of("topic1"))
+        .topicsList(List.of("topic1"))
+        .topicsListMode(TopicsListMode.WHITELIST)
         .build();
 
     when(adminClientService.describeAllTopics()).thenReturn(List.of(topicConfiguration));
@@ -171,7 +175,8 @@ class RestoreTopicServiceTest {
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
 
     RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
-        .topicsToRestore(List.of("topic1"))
+        .topicsList(List.of("topic1"))
+        .topicsListMode(TopicsListMode.WHITELIST)
         .build();
 
     when(adminClientService.describeAllTopics()).thenReturn(List.of(topicConfiguration));
