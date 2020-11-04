@@ -69,7 +69,7 @@ public class RestoreArgsWrapper {
 
       param(singleParam(AWS_S3_PATH_STYLE_ACCESS_ENABLED).isRequired(false)),
       param(singleParam(RESTORE_DRY_RUN).isRequired(false)),
-      param(singleParam(RESTORE_TOPIC_LIST_MODE).isRequired(false)),
+      param(singleParam(RESTORE_TOPIC_LIST_MODE).isRequired(true)),
       param(singleParam(RESTORE_TOPIC_LIST_VALUE).isRequired(false)),
       param(singleParam(RESTORE_TIME).isRequired(false))
   );

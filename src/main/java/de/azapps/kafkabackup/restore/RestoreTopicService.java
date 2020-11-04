@@ -2,6 +2,7 @@ package de.azapps.kafkabackup.restore;
 
 import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.kafka.clients.admin.NewTopic;
 
 @Slf4j
@@ -36,10 +38,23 @@ class RestoreTopicService {
   private List<String> getTopicsList(RestoreArgsWrapper restoreArgsWrapper, TopicsConfig config) {
     switch (restoreArgsWrapper.getTopicsListMode()) {
       case WHITELIST:
-        return config.getTopics().stream()
-            .filter(topicConfiguration -> restoreArgsWrapper.getTopicsList().contains(topicConfiguration.getTopicName()))
-            .map(TopicConfiguration::getTopicName)
+        List<String> topicsFromConfig = config.getTopics().stream().map(TopicConfiguration::getTopicName)
             .collect(Collectors.toList());
+
+        List<String> topicsFromRestoreArgs = restoreArgsWrapper.getTopicsList();
+
+        List<String> topicsToRestore = topicsFromConfig.stream()
+            .filter(topicsFromRestoreArgs::contains)
+            .collect(Collectors.toList());
+
+        if (topicsToRestore.size() < topicsFromRestoreArgs.size()) {
+        log.error("Some of the topics configured to be restored does not have configuration backup" +
+                " - restore has been canceled. Topics missing configuration backup topics: {}",
+            CollectionUtils.disjunction(topicsFromRestoreArgs, topicsToRestore)
+            );
+        throw new RuntimeException("Some of the topics configured to be restored does not have configuration backup");
+      }
+        return topicsToRestore;
       case BLACKLIST:
         return config.getTopics().stream()
             .filter(topicConfiguration -> !restoreArgsWrapper.getTopicsList().contains(topicConfiguration.getTopicName()))
@@ -81,19 +96,6 @@ class RestoreTopicService {
     List<String> existingTopics = adminClientService.describeAllTopics().stream().map(TopicConfiguration::getTopicName)
         .filter(topicNames::contains)
         .collect(Collectors.toList());
-
-    if (topicsToRestore != null) {
-      List<String> topicsWithoutConfigBackup = topicsToRestore.stream()
-          .filter(topic -> !topicNames.contains(topic))
-          .collect(Collectors.toList());
-
-      if (topicsWithoutConfigBackup.size() > 0) {
-        log.error("Some of the topics configured to be restored does not have configuration backup" +
-                " - restore has been canceled. Topics missing configuration backup topics: {}",
-            topicsWithoutConfigBackup);
-        throw new RuntimeException("Some of the topics configured to be restored does not have configuration backup");
-      }
-    }
 
     if (existingTopics.size() > 0) {
       log.error("Some of the topics from configuration already exists - restore has been canceled. Existing topics: {}",

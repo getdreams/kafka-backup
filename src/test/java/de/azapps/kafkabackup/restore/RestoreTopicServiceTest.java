@@ -43,7 +43,7 @@ class RestoreTopicServiceTest {
   }
 
   @Test
-  public void shouldRestoreAllTopicsWhenListOfTopicsToRestoreIsEmpty() {
+  public void shouldRestoreAllTopics() {
     // given
     TopicConfiguration topicConfigurationForTopic1 = new TopicConfiguration("topic1", 3, 3);
     topicConfigurationForTopic1.setConfiguration(Map.of("property1", "value1"));
@@ -107,6 +107,74 @@ class RestoreTopicServiceTest {
     assertEquals(resultNewTopic.numPartitions(), 3);
     assertEquals(resultNewTopic.replicationFactor(), 3);
     assertEquals(resultNewTopic.configs(), Map.of("property1", "value1"));
+  }
+
+  @Test
+  public void shouldOmitTopicsFromBlackListDuringRestoration() {
+    // given
+    TopicConfiguration topicConfigurationForTopic1 = new TopicConfiguration("topic1", 3, 3);
+    topicConfigurationForTopic1.setConfiguration(Map.of("property1", "value1"));
+
+    TopicConfiguration topicConfigurationForTopic2 = new TopicConfiguration("topic2", 3, 3);
+    topicConfigurationForTopic2.setConfiguration(Map.of("property1", "value1"));
+    TopicsConfig topicsConfig = TopicsConfig
+        .of(List.of(topicConfigurationForTopic1, topicConfigurationForTopic2));
+
+    S3Object s3Object = new S3Object();
+    s3Object.setObjectContent(new ByteArrayInputStream(topicsConfig.toJson().getBytes()));
+    when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
+
+    RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
+        .topicsListMode(TopicsListMode.BLACKLIST)
+        .topicsList(List.of("topic1"))
+        .build();
+
+
+    // when
+    sut.restoreTopics(restoreArgsWrapper);
+
+    // then
+    ArgumentCaptor<List<NewTopic>> newTopics = ArgumentCaptor.forClass(List.class);
+    verify(adminClientService, times(1)).createTopics(newTopics.capture());
+
+
+    assertEquals(newTopics.getValue().size(), 1);
+    List<String> namesOfCreatedTopics = newTopics.getValue().stream().map(NewTopic::name).collect(Collectors.toList());
+    assertTrue(namesOfCreatedTopics.contains("topic2"));
+  }
+
+  @Test
+  public void shouldRestoreOnlyTopicsMatchingWithRegexp() {
+    // given
+    TopicConfiguration topicConfigurationForTopic1 = new TopicConfiguration("topic_1", 3, 3);
+    topicConfigurationForTopic1.setConfiguration(Map.of("property1", "value1"));
+
+    TopicConfiguration topicConfigurationForTopic2 = new TopicConfiguration("topic_2", 3, 3);
+    topicConfigurationForTopic2.setConfiguration(Map.of("property1", "value1"));
+    TopicsConfig topicsConfig = TopicsConfig
+        .of(List.of(topicConfigurationForTopic1, topicConfigurationForTopic2));
+
+    S3Object s3Object = new S3Object();
+    s3Object.setObjectContent(new ByteArrayInputStream(topicsConfig.toJson().getBytes()));
+    when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
+
+    RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
+        .topicsListMode(TopicsListMode.REGEXP)
+        .topicsRegexp(".*_1")
+        .build();
+
+
+    // when
+    sut.restoreTopics(restoreArgsWrapper);
+
+    // then
+    ArgumentCaptor<List<NewTopic>> newTopics = ArgumentCaptor.forClass(List.class);
+    verify(adminClientService, times(1)).createTopics(newTopics.capture());
+
+
+    assertEquals(newTopics.getValue().size(), 1);
+    List<String> namesOfCreatedTopics = newTopics.getValue().stream().map(NewTopic::name).collect(Collectors.toList());
+    assertTrue(namesOfCreatedTopics.contains("topic_1"));
   }
 
   @Test
@@ -178,8 +246,6 @@ class RestoreTopicServiceTest {
         .topicsList(List.of("topic1"))
         .topicsListMode(TopicsListMode.WHITELIST)
         .build();
-
-    when(adminClientService.describeAllTopics()).thenReturn(List.of(topicConfiguration));
 
     // when
     RuntimeException runtimeException = assertThrows(RuntimeException.class,
