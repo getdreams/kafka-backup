@@ -14,8 +14,12 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.base.Strings;
 import java.io.InputStream;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,9 +59,42 @@ public class AwsS3Service {
     return s3Client.doesObjectExist(bucketName, objectName);
   }
 
+  public List<String> getBucketObjectKeys(String bucketName, String prefix, String delimiter) {
+    log.debug("Getting file list from S3 (bucketName: {})", bucketName);
+    final ListObjectsRequest listObjectsRequest = new ListObjectsRequest();
+    listObjectsRequest.setBucketName(bucketName);
+
+    listObjectsRequest.setPrefix(prefix);
+    listObjectsRequest.setDelimiter(delimiter);
+
+     ObjectListing objectListing = getObjectList(listObjectsRequest);
+
+     List<String> backupFileNames = objectListing.getObjectSummaries().stream()
+         .map(S3ObjectSummary::getKey).collect(Collectors.toList());
+
+     while (objectListing.isTruncated()) {
+       objectListing = s3Client.listNextBatchOfObjects(objectListing);
+
+       backupFileNames.addAll(objectListing.getObjectSummaries().stream()
+           .map(S3ObjectSummary::getKey).collect(Collectors.toList()));
+     }
+
+    return getObjectList(listObjectsRequest).getObjectSummaries().stream()
+        .map(S3ObjectSummary::getKey)
+        .collect(Collectors.toList());
+  }
+
   private S3Object getObject(GetObjectRequest getObjectRequest) {
     try {
       return s3Client.getObject(getObjectRequest);
+    } catch (AmazonClientException e) {
+      throw runtimeException("get file", e);
+    }
+  }
+
+  private ObjectListing getObjectList(ListObjectsRequest listObjectsRequest) {
+    try {
+      return s3Client.listObjects(listObjectsRequest);
     } catch (AmazonClientException e) {
       throw runtimeException("get file", e);
     }

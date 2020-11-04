@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import de.azapps.kafkabackup.common.record.Record;
 import de.azapps.kafkabackup.common.record.RecordJSONSerde;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
+import java.io.InputStream;
 import lombok.Getter;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.errors.RetriableException;
@@ -14,7 +15,7 @@ import java.io.IOException;
 
 public class S3BatchWriter {
 
-    private static final byte UTF8_UNIX_LINE_FEED = 0x0A;
+    public static final byte UTF8_UNIX_LINE_FEED = 0x0A;
     private static final byte[] RECORD_SEPARATOR = {UTF8_UNIX_LINE_FEED};
 
     private final AwsS3Service awsS3Service;

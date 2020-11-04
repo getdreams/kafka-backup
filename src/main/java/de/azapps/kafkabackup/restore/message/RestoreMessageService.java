@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class RestoreMessageService {
 
   private final AdminClientService adminClientService;
+  private final AwsS3Service awsS3Service;
   ExecutorService executor;
   private final RestoreConfigurationHelper restoreConfigurationHelper;
   private final RestoreArgsWrapper restoreArgsWrapper;
@@ -31,6 +32,7 @@ public class RestoreMessageService {
 
   public RestoreMessageService(AwsS3Service awsS3Service, AdminClientService adminClientService,
       RestoreArgsWrapper restoreArgsWrapper) {
+    this.awsS3Service = awsS3Service;
     this.restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service);
     this.restoreArgsWrapper = restoreArgsWrapper;
     this.adminClientService = adminClientService;
@@ -50,8 +52,7 @@ public class RestoreMessageService {
 
     partitionsToRestore.stream()
         .forEach(partitionToRestore -> {
-          executor.submit(new PartitionMessageWriterWorker(partitionToRestore,
-              partitionToRestore.getTopicPartitionId()));
+          executor.submit(new PartitionMessageWriterWorker(partitionToRestore, awsS3Service, restoreArgsWrapper));
         });
 
     while (anyPartitionWriterWaitingOrRunning()) {
@@ -124,6 +125,7 @@ public class RestoreMessageService {
     final TopicConfiguration topicConfiguration;
     final int partitionNumber;
     private MessageRestorationStatus messageRestorationStatus;
+    // TODO mapa
 
     public String getTopicPartitionId() {
       return topicConfiguration.getTopicName() + "." + partitionNumber;
