@@ -40,10 +40,13 @@ public class RestoreArgsWrapper {
   public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
 
   public static final String RESTORE_DRY_RUN = "restore.dryRun";
-  public static final String RESTORE_TOPIC_LIST_MODE = "restore.topicsList.mode";
-  public static final String RESTORE_TOPIC_LIST_VALUE = "restore.topicsList.value";
+  public static final String RESTORE_TOPIC_ALLOW_LIST = "restore.topicsAllowList";
+  public static final String RESTORE_TOPIC_DENY_LIST = "restore.topicsDenyList";
   public static final String RESTORE_TIME = "restore.time";
   public static final String RESTORE_HASH = "restore.hash";
+
+  public static final String ALL_TOPICS_REGEX = ".*";
+  public static final String NONE_TOPICS_REGEX = "$^";
 
   private final String awsEndpoint;
   private final String awsRegion;
@@ -53,9 +56,8 @@ public class RestoreArgsWrapper {
   private final String kafkaBootstrapServers;
   private final String hashToRestore;
   private final LocalDateTime timeToRestore;
-  private final TopicsListMode topicsListMode;
-  private final List<String> topicsList;
-  private final String topicsRegexp;
+  private final String topicsAllowListRegex;
+  private final String topicsDenyListRegex;
   private final boolean isDryRun;
   private final RestoreMode restoreMode;
 
@@ -69,8 +71,8 @@ public class RestoreArgsWrapper {
 
       param(singleParam(AWS_S3_PATH_STYLE_ACCESS_ENABLED).isRequired(false)),
       param(singleParam(RESTORE_DRY_RUN).isRequired(false)),
-      param(singleParam(RESTORE_TOPIC_LIST_MODE).isRequired(true)),
-      param(singleParam(RESTORE_TOPIC_LIST_VALUE).isRequired(false)),
+      param(singleParam(RESTORE_TOPIC_ALLOW_LIST).isRequired(false)),
+      param(singleParam(RESTORE_TOPIC_DENY_LIST).isRequired(false)),
       param(singleParam(RESTORE_TIME).isRequired(false))
   );
 
@@ -86,24 +88,14 @@ public class RestoreArgsWrapper {
     builder.kafkaBootstrapServers(properties.getProperty(KAFKA_BOOTSTRAP_SERVERS));
     builder.configBackupBucket(properties.getProperty(KAFKA_CONFIG_BACKUP_BUCKET));
     builder.hashToRestore(properties.getProperty(RESTORE_HASH));
-    builder.restoreMode(RestoreMode.valueOf(properties.getProperty(RESTORE_MODE)));
+    builder.restoreMode(RestoreMode.valueOf(properties.getProperty(RESTORE_MODE).toUpperCase()));
 
     builder.pathStyleAccessEnabled(parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false")));
     builder.isDryRun(parseBoolean(properties.getProperty(RESTORE_DRY_RUN, "true")));
 
-    TopicsListMode topicListMode = Optional.ofNullable(properties.getProperty(RESTORE_TOPIC_LIST_MODE))
-        .map(TopicsListMode::valueOf)
-        .orElse(TopicsListMode.ALL_TOPICS);
 
-    builder.topicsListMode(topicListMode);
-    switch (topicListMode) {
-      case BLACKLIST:
-      case WHITELIST:
-        builder.topicsList(List.of(properties.getProperty(RESTORE_TOPIC_LIST_VALUE).split(",")));
-        break;
-      case REGEXP:
-        builder.topicsRegexp(properties.getProperty(RESTORE_TOPIC_LIST_VALUE));
-    }
+    builder.topicsAllowListRegex(properties.getProperty(RESTORE_TOPIC_ALLOW_LIST, ALL_TOPICS_REGEX));
+    builder.topicsDenyListRegex(properties.getProperty(RESTORE_TOPIC_DENY_LIST, NONE_TOPICS_REGEX));
 
     builder.timeToRestore(getRestoreTime(properties));
 

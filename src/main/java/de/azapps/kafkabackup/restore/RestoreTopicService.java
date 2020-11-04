@@ -10,12 +10,12 @@ import de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.kafka.clients.admin.NewTopic;
 
 @Slf4j
@@ -36,38 +36,18 @@ class RestoreTopicService {
   }
 
   private List<String> getTopicsList(RestoreArgsWrapper restoreArgsWrapper, TopicsConfig config) {
-    switch (restoreArgsWrapper.getTopicsListMode()) {
-      case WHITELIST:
-        List<String> topicsFromConfig = config.getTopics().stream().map(TopicConfiguration::getTopicName)
-            .collect(Collectors.toList());
+    List<String> topicsFromConfig = config.getTopics().stream()
+        .map(TopicConfiguration::getTopicName)
+        .collect(Collectors.toList());
 
-        List<String> topicsFromRestoreArgs = restoreArgsWrapper.getTopicsList();
+    String topicAllowRegex = restoreArgsWrapper.getTopicsAllowListRegex();
+    String topicDenyRegex = restoreArgsWrapper.getTopicsDenyListRegex();
 
-        List<String> topicsToRestore = topicsFromConfig.stream()
-            .filter(topicsFromRestoreArgs::contains)
-            .collect(Collectors.toList());
+    return topicsFromConfig.stream()
+        .filter(topicName -> topicName.matches(topicAllowRegex))
+        .filter(topicName -> !topicName.matches(topicDenyRegex))
+        .collect(Collectors.toList());
 
-        if (topicsToRestore.size() < topicsFromRestoreArgs.size()) {
-        log.error("Some of the topics configured to be restored does not have configuration backup" +
-                " - restore has been canceled. Topics missing configuration backup topics: {}",
-            CollectionUtils.disjunction(topicsFromRestoreArgs, topicsToRestore)
-            );
-        throw new RuntimeException("Some of the topics configured to be restored does not have configuration backup");
-      }
-        return topicsToRestore;
-      case BLACKLIST:
-        return config.getTopics().stream()
-            .filter(topicConfiguration -> !restoreArgsWrapper.getTopicsList().contains(topicConfiguration.getTopicName()))
-            .map(TopicConfiguration::getTopicName)
-            .collect(Collectors.toList());
-      case REGEXP:
-        return config.getTopics().stream()
-            .filter(topicConfiguration -> topicConfiguration.getTopicName().matches(restoreArgsWrapper.getTopicsRegexp()))
-            .map(TopicConfiguration::getTopicName)
-            .collect(Collectors.toList());
-      default:
-        return null;
-    }
   }
 
   private void restoreTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
