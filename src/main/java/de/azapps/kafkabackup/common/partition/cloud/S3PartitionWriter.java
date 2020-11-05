@@ -4,14 +4,13 @@ import de.azapps.kafkabackup.common.partition.PartitionException;
 import de.azapps.kafkabackup.common.partition.PartitionWriter;
 import de.azapps.kafkabackup.common.record.Record;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.Queue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.connect.errors.RetriableException;
-
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.Queue;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -26,10 +25,16 @@ public class S3PartitionWriter implements PartitionWriter {
 
   private S3BatchWriter batchWriter;
   private Long lastCommittableOffset = null; // Nothing written so far, so nothing to commit
+  private Long lastBufferedOffset = -1L;
 
   @Override
   public void append(Record record) throws PartitionException {
-    buffer.add(record);
+    if (record.kafkaOffset() > lastBufferedOffset) {
+      buffer.add(record);
+      lastBufferedOffset = record.kafkaOffset();
+    } else {
+      log.debug("Skipping message already added to buffer.");
+    }
   }
 
   @Override
@@ -39,6 +44,7 @@ public class S3PartitionWriter implements PartitionWriter {
       writeToBatch(record);
       maybeCommitBasedOnMessages();
     }
+
     maybeCommitBasedOnTime();
   }
 

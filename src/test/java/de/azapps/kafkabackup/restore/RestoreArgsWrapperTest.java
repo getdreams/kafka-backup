@@ -1,6 +1,7 @@
-package de.azapps.kafkabackup.common.topic.restore;
+package de.azapps.kafkabackup.restore;
 
 import static org.junit.jupiter.api.Assertions.*;
+import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;

@@ -1,11 +1,12 @@
-package de.azapps.kafkabackup.common.topic.restore;
+package de.azapps.kafkabackup.restore.common;
 
-import static de.azapps.kafkabackup.common.topic.restore.RestoreArg.param;
-import static de.azapps.kafkabackup.common.topic.restore.RestoreArg.singleParam;
+import static de.azapps.kafkabackup.restore.common.RestoreArg.param;
+import static de.azapps.kafkabackup.restore.common.RestoreArg.singleParam;
 import static de.azapps.kafkabackup.common.topic.restore.RestoreMode.MESSAGES;
 import static de.azapps.kafkabackup.common.topic.restore.RestoreMode.OFFSETS;
 import static de.azapps.kafkabackup.common.topic.restore.RestoreMode.TOPICS;
 import static java.lang.Boolean.parseBoolean;
+import static java.lang.Integer.parseInt;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,6 +49,8 @@ public class RestoreArgsWrapper {
   public static final String ALL_TOPICS_REGEX = ".*";
   public static final String NONE_TOPICS_REGEX = "$^";
 
+  public static final String RESTORE_MESSAGES_MAX_THREADS = "restore.messages.maxThreads";
+
   private final String awsEndpoint;
   private final String awsRegion;
   private final Boolean pathStyleAccessEnabled;
@@ -60,6 +63,7 @@ public class RestoreArgsWrapper {
   private final String topicsDenyListRegex;
   private final boolean isDryRun;
   private final RestoreMode restoreMode;
+  private final int restoreMessagesMaxThreads;
 
   public static final List<RestoreArg> args = List.of(
       param(singleParam(AWS_S3_REGION).isRequired(true)),
@@ -73,7 +77,8 @@ public class RestoreArgsWrapper {
       param(singleParam(RESTORE_DRY_RUN).isRequired(false)),
       param(singleParam(RESTORE_TOPIC_ALLOW_LIST).isRequired(false)),
       param(singleParam(RESTORE_TOPIC_DENY_LIST).isRequired(false)),
-      param(singleParam(RESTORE_TIME).isRequired(false))
+      param(singleParam(RESTORE_TIME).isRequired(false)),
+      param(singleParam(RESTORE_MESSAGES_MAX_THREADS).isRequired(false))
   );
 
   public static RestoreArgsWrapper of(String path) {
@@ -98,6 +103,7 @@ public class RestoreArgsWrapper {
     builder.topicsDenyListRegex(properties.getProperty(RESTORE_TOPIC_DENY_LIST, NONE_TOPICS_REGEX));
 
     builder.timeToRestore(getRestoreTime(properties));
+    builder.restoreMessagesMaxThreads(parseInt(properties.getProperty(RESTORE_MESSAGES_MAX_THREADS, "1")));
 
     return builder.build();
 }
