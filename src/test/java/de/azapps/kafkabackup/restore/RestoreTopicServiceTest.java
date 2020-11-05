@@ -1,7 +1,7 @@
 package de.azapps.kafkabackup.restore;
 
-import static de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper.ALL_TOPICS_REGEX;
-import static de.azapps.kafkabackup.common.topic.restore.RestoreArgsWrapper.NONE_TOPICS_REGEX;
+import static de.azapps.kafkabackup.restore.common.RestoreArgsWrapper.ALL_TOPICS_REGEX;
+import static de.azapps.kafkabackup.restore.common.RestoreArgsWrapper.NONE_TOPICS_REGEX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -16,10 +16,8 @@ import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
-import de.azapps.kafkabackup.common.topic.restore.TopicsListMode;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.io.ByteArrayInputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

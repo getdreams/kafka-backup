@@ -2,9 +2,9 @@ package de.azapps.kafkabackup.restore.common;
 
 import static de.azapps.kafkabackup.restore.common.RestoreArg.param;
 import static de.azapps.kafkabackup.restore.common.RestoreArg.singleParam;
-import static de.azapps.kafkabackup.common.topic.restore.RestoreMode.MESSAGES;
-import static de.azapps.kafkabackup.common.topic.restore.RestoreMode.OFFSETS;
-import static de.azapps.kafkabackup.common.topic.restore.RestoreMode.TOPICS;
+import static de.azapps.kafkabackup.restore.common.RestoreMode.MESSAGES;
+import static de.azapps.kafkabackup.restore.common.RestoreMode.OFFSETS;
+import static de.azapps.kafkabackup.restore.common.RestoreMode.TOPICS;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import java.io.FileInputStream;

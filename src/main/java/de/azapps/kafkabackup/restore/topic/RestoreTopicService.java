@@ -1,19 +1,16 @@
 package de.azapps.kafkabackup.restore.topic;
 
-import com.amazonaws.services.s3.model.S3Object;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
-import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
+import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.NewTopic;
 
@@ -33,15 +30,7 @@ public class RestoreTopicService {
     restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service);
   }
 
-  public void restoreTopics(RestoreArgsWrapper restoreTopicsArgsWrapper) {
-    TopicsConfig topicsConfig = restoreConfigurationHelper.getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore(),
-        restoreTopicsArgsWrapper.getConfigBackupBucket());
-
-    restoreTopics(topicsConfig, getTopicsList(restoreTopicsArgsWrapper, topicsConfig),
-        restoreTopicsArgsWrapper.isDryRun());
-  }
-
-  private List<String> getTopicsList(RestoreArgsWrapper restoreArgsWrapper, TopicsConfig config) {
+  public static List<String> getTopicsList(RestoreArgsWrapper restoreArgsWrapper, TopicsConfig config) {
     List<String> topicsFromConfig = config.getTopics().stream()
         .map(TopicConfiguration::getTopicName)
         .collect(Collectors.toList());
@@ -54,6 +43,14 @@ public class RestoreTopicService {
         .filter(topicName -> !topicName.matches(topicDenyRegex))
         .collect(Collectors.toList());
 
+  }
+
+  public void restoreTopics(RestoreArgsWrapper restoreTopicsArgsWrapper) {
+    TopicsConfig topicsConfig = restoreConfigurationHelper.getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore(),
+        restoreTopicsArgsWrapper.getConfigBackupBucket());
+
+    restoreTopics(topicsConfig, getTopicsList(restoreTopicsArgsWrapper, topicsConfig),
+        restoreTopicsArgsWrapper.isDryRun());
   }
 
   private void restoreTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
