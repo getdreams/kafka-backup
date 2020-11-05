@@ -3,7 +3,6 @@ package de.azapps.kafkabackup.common.record;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import de.azapps.kafkabackup.common.partition.cloud.S3BatchDeserializer;
 import de.azapps.kafkabackup.common.partition.cloud.S3BatchWriter;
 import java.util.List;
 import lombok.SneakyThrows;
