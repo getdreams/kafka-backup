@@ -113,7 +113,7 @@ class RestoreTopicServiceTest {
   }
 
   @Test
-  public void shouldOmitTopicsFromBlackListDuringRestoration() {
+  public void shouldOmitTopicsFromDenyListDuringRestoration() {
     // given
     TopicConfiguration topicConfigurationForTopic1 = new TopicConfiguration("topic1", 3, 3);
     topicConfigurationForTopic1.setConfiguration(Map.of("property1", "value1"));
