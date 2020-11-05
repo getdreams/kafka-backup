@@ -27,4 +27,23 @@ class RestoreArgsWrapperTest {
     assertEquals(runtimeException.getMessage(), "Missing required property: restore.mode");
   }
 
+  @Test
+  public void shouldAcceptAllTopicsIfAllowOrDenyListIsNotProvided() throws IOException {
+    // given
+    File test = File.createTempFile("test", ".config");
+    Files.write(test.toPath(),
+        ("aws.s3.region=region"
+            + "\nkafka.bootstrap.servers=server1"
+            + "\naws.s3.bucketNameForConfig=bucketName"
+            + "\nrestore.hash=hash"
+            + "\nrestore.mode=topics"
+        ).getBytes());
+    // when
+    RestoreArgsWrapper result = RestoreArgsWrapper.of(test.getPath());
+
+    // then
+    assertEquals(result.getTopicsAllowListRegex(), ".*");
+    assertEquals(result.getTopicsDenyListRegex(), "$^");
+  }
+
 }

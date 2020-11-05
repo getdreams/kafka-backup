@@ -1,7 +1,10 @@
 package de.azapps.kafkabackup.restore.common;
 
-import static de.azapps.kafkabackup.restore.common.RestoreArg.optional;
-import static de.azapps.kafkabackup.restore.common.RestoreArg.required;
+import static de.azapps.kafkabackup.restore.common.RestoreArg.param;
+import static de.azapps.kafkabackup.restore.common.RestoreArg.singleParam;
+import static de.azapps.kafkabackup.restore.common.RestoreMode.MESSAGES;
+import static de.azapps.kafkabackup.restore.common.RestoreMode.OFFSETS;
+import static de.azapps.kafkabackup.restore.common.RestoreMode.TOPICS;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import java.io.FileInputStream;
@@ -38,9 +41,13 @@ public class RestoreArgsWrapper {
   public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
 
   public static final String RESTORE_DRY_RUN = "restore.dryRun";
-  public static final String RESTORE_TOPIC_LIST = "restore.topicList";
+  public static final String RESTORE_TOPIC_ALLOW_LIST = "restore.topicsAllowList";
+  public static final String RESTORE_TOPIC_DENY_LIST = "restore.topicsDenyList";
   public static final String RESTORE_TIME = "restore.time";
   public static final String RESTORE_HASH = "restore.hash";
+
+  public static final String ALL_TOPICS_REGEX = ".*";
+  public static final String NONE_TOPICS_REGEX = "$^";
 
   public static final String RESTORE_MESSAGES_MAX_THREADS = "restore.messages.maxThreads";
 
@@ -52,23 +59,26 @@ public class RestoreArgsWrapper {
   private final String kafkaBootstrapServers;
   private final String hashToRestore;
   private final LocalDateTime timeToRestore;
-  private final List<String> topicsToRestore;
+  private final String topicsAllowListRegex;
+  private final String topicsDenyListRegex;
   private final boolean isDryRun;
   private final RestoreMode restoreMode;
   private final int restoreMessagesMaxThreads;
 
   public static final List<RestoreArg> args = List.of(
-      required(AWS_S3_REGION),
-      required(KAFKA_BOOTSTRAP_SERVERS),
-      required(KAFKA_CONFIG_BACKUP_BUCKET),
-      required(RESTORE_HASH),
-      required(RESTORE_MODE),
+      param(singleParam(AWS_S3_REGION).isRequired(true)),
+      param(singleParam(KAFKA_BOOTSTRAP_SERVERS).isRequired(true)),
+      param(singleParam(KAFKA_CONFIG_BACKUP_BUCKET).isRequired(true)),
+      param(singleParam(RESTORE_HASH).isRequired(true)),
+      param(singleParam(RESTORE_MODE).isRequired(true)
+          .allowedValues(List.of(MESSAGES.name(), TOPICS.name(), OFFSETS.name()))),
 
-      optional(AWS_S3_PATH_STYLE_ACCESS_ENABLED),
-      optional(RESTORE_DRY_RUN),
-      optional(RESTORE_TOPIC_LIST),
-      optional(RESTORE_TIME),
-      optional(RESTORE_MESSAGES_MAX_THREADS)
+      param(singleParam(AWS_S3_PATH_STYLE_ACCESS_ENABLED).isRequired(false)),
+      param(singleParam(RESTORE_DRY_RUN).isRequired(false)),
+      param(singleParam(RESTORE_TOPIC_ALLOW_LIST).isRequired(false)),
+      param(singleParam(RESTORE_TOPIC_DENY_LIST).isRequired(false)),
+      param(singleParam(RESTORE_TIME).isRequired(false)),
+      param(singleParam(RESTORE_MESSAGES_MAX_THREADS).isRequired(false))
   );
 
   public static RestoreArgsWrapper of(String path) {
@@ -83,13 +93,14 @@ public class RestoreArgsWrapper {
     builder.kafkaBootstrapServers(properties.getProperty(KAFKA_BOOTSTRAP_SERVERS));
     builder.configBackupBucket(properties.getProperty(KAFKA_CONFIG_BACKUP_BUCKET));
     builder.hashToRestore(properties.getProperty(RESTORE_HASH));
-    builder.restoreMode(RestoreMode.valueOf(properties.getProperty(RESTORE_MODE)));
+    builder.restoreMode(RestoreMode.valueOf(properties.getProperty(RESTORE_MODE).toUpperCase()));
 
     builder.pathStyleAccessEnabled(parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false")));
     builder.isDryRun(parseBoolean(properties.getProperty(RESTORE_DRY_RUN, "true")));
-    builder.topicsToRestore(
-        properties.containsKey(RESTORE_TOPIC_LIST) ? List.of(properties.getProperty(RESTORE_TOPIC_LIST).split(","))
-            : List.of());
+
+
+    builder.topicsAllowListRegex(properties.getProperty(RESTORE_TOPIC_ALLOW_LIST, ALL_TOPICS_REGEX));
+    builder.topicsDenyListRegex(properties.getProperty(RESTORE_TOPIC_DENY_LIST, NONE_TOPICS_REGEX));
 
     builder.timeToRestore(getRestoreTime(properties));
     builder.restoreMessagesMaxThreads(parseInt(properties.getProperty(RESTORE_MESSAGES_MAX_THREADS, "1")));
@@ -105,10 +116,15 @@ public class RestoreArgsWrapper {
   }
 
   private static void validateProperties(Properties properties) {
-    args.stream().filter(RestoreArg::isRequired).forEach(restoreArg -> {
-      if (properties.get(restoreArg.getName()) == null) {
-        throw new RestoreConfigurationException(
-            String.format("Missing required property: %s", restoreArg.getName()));
+    args.forEach(restoreArg -> {
+      if (restoreArg.isRequired()) {
+        restoreArg.getNames().stream()
+            .filter(paramName -> properties.get(paramName) == null)
+            .findAny()
+            .ifPresent((arg) -> {
+              throw new RestoreConfigurationException(
+                  String.format("Missing required property: %s", arg));
+            });
       }
     });
   }
