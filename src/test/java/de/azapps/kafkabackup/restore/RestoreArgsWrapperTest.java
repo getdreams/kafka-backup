@@ -30,6 +30,7 @@ class RestoreArgsWrapperTest {
 
   @Test
   public void shouldParseSeveralRestorationModesFromConfigFile() throws IOException {
+
     // given
     File test = File.createTempFile("test", ".config");
     Files.write(test.toPath(),
@@ -37,7 +38,7 @@ class RestoreArgsWrapperTest {
             + "\nkafka.bootstrap.servers=server1"
             + "\naws.s3.bucketNameForConfig=bucketName"
             + "\nrestore.hash=hash"
-            + "\nrestore.mode=topics,messages"
+        + "\nrestore.mode=topics,messages"
         ).getBytes());
     // when
     RestoreArgsWrapper argsWrapper = RestoreArgsWrapper.of(test.getPath());
@@ -45,6 +46,25 @@ class RestoreArgsWrapperTest {
     // then
     assertTrue(argsWrapper.getRestoreMode().contains(RestoreMode.TOPICS));
     assertTrue(argsWrapper.getRestoreMode().contains(RestoreMode.MESSAGES));
+  }
+
+  @Test
+  public void shouldAcceptAllTopicsIfAllowOrDenyListIsNotProvided() throws IOException {
+    // given
+    File test = File.createTempFile("test", ".config");
+    Files.write(test.toPath(),
+        ("aws.s3.region=region"
+            + "\nkafka.bootstrap.servers=server1"
+            + "\naws.s3.bucketNameForConfig=bucketName"
+            + "\nrestore.hash=hash"
+            + "\nrestore.mode=topics"
+        ).getBytes());
+    // when
+    RestoreArgsWrapper result = RestoreArgsWrapper.of(test.getPath());
+
+    // then
+    assertEquals(result.getTopicsAllowListRegex(), ".*");
+    assertEquals(result.getTopicsDenyListRegex(), "$^");
   }
 
 }

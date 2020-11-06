@@ -3,19 +3,20 @@ package de.azapps.kafkabackup.restore.topic;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
-import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
+import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.NewTopic;
 
 @Slf4j
-public
-class RestoreTopicService {
+@RequiredArgsConstructor
+public class RestoreTopicService {
 
   private final AdminClientService adminClientService;
   private final AwsS3Service awsS3Service;
@@ -29,11 +30,27 @@ class RestoreTopicService {
     restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service);
   }
 
+  public static List<String> getTopicsList(RestoreArgsWrapper restoreArgsWrapper, TopicsConfig config) {
+    List<String> topicsFromConfig = config.getTopics().stream()
+        .map(TopicConfiguration::getTopicName)
+        .collect(Collectors.toList());
+
+    String topicAllowRegex = restoreArgsWrapper.getTopicsAllowListRegex();
+    String topicDenyRegex = restoreArgsWrapper.getTopicsDenyListRegex();
+
+    return topicsFromConfig.stream()
+        .filter(topicName -> topicName.matches(topicAllowRegex))
+        .filter(topicName -> !topicName.matches(topicDenyRegex))
+        .collect(Collectors.toList());
+
+  }
+
   public void restoreTopics(RestoreArgsWrapper restoreTopicsArgsWrapper) {
     TopicsConfig topicsConfig = restoreConfigurationHelper.getTopicsConfig(restoreTopicsArgsWrapper.getHashToRestore(),
         restoreTopicsArgsWrapper.getConfigBackupBucket());
 
-    restoreTopics(topicsConfig, restoreTopicsArgsWrapper.getTopicsToRestore(), restoreTopicsArgsWrapper.isDryRun());
+    restoreTopics(topicsConfig, getTopicsList(restoreTopicsArgsWrapper, topicsConfig),
+        restoreTopicsArgsWrapper.isDryRun());
   }
 
   private void restoreTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
@@ -45,23 +62,13 @@ class RestoreTopicService {
   private List<NewTopic> createTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
 
     Supplier<Stream<TopicConfiguration>> streamSupplier = () -> config.getTopics().stream()
-        .filter(topic -> topicsToRestore.isEmpty() || topicsToRestore.contains(topic.getTopicName()));
+        .filter(topic -> topicsToRestore == null || topicsToRestore.contains(topic.getTopicName()));
 
     List<String> topicNames = streamSupplier.get().map(TopicConfiguration::getTopicName).collect(Collectors.toList());
 
     List<String> existingTopics = adminClientService.describeAllTopics().stream().map(TopicConfiguration::getTopicName)
         .filter(topicNames::contains)
         .collect(Collectors.toList());
-
-    List<String> topicsWithoutConfigBackup = topicsToRestore.stream().filter(topic -> !topicNames.contains(topic))
-        .collect(Collectors.toList());
-
-    if (topicsWithoutConfigBackup.size() > 0) {
-      log.error("Some of the topics configured to be restored does not have configuration backup" +
-              " - restore has been canceled. Topics missing configuration backup topics: {}",
-          topicsWithoutConfigBackup);
-      throw new RuntimeException("Some of the topics configured to be restored does not have configuration backup");
-    }
 
     if (existingTopics.size() > 0) {
       log.error("Some of the topics from configuration already exists - restore has been canceled. Existing topics: {}",

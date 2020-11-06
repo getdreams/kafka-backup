@@ -6,6 +6,7 @@ import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
+import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,7 +48,7 @@ public class RestoreMessageService {
         restoreArgsWrapper.getConfigBackupBucket());
 
     List<TopicPartitionToRestore> partitionsToRestore = getPartitionsToRestore(topicsConfig,
-        restoreArgsWrapper.getTopicsToRestore());
+        RestoreTopicService.getTopicsList(restoreArgsWrapper, topicsConfig));
 
     partitionsToRestore.stream()
         .forEach(partitionToRestore -> {

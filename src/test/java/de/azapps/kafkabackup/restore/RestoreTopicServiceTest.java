@@ -1,5 +1,7 @@
 package de.azapps.kafkabackup.restore;
 
+import static de.azapps.kafkabackup.restore.common.RestoreArgsWrapper.ALL_TOPICS_REGEX;
+import static de.azapps.kafkabackup.restore.common.RestoreArgsWrapper.NONE_TOPICS_REGEX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -16,7 +18,6 @@ import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.io.ByteArrayInputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,7 +44,7 @@ class RestoreTopicServiceTest {
   }
 
   @Test
-  public void shouldRestoreAllTopicsWhenListOfTopicsToRestoreIsEmpty() {
+  public void shouldRestoreAllTopics() {
     // given
     TopicConfiguration topicConfigurationForTopic1 = new TopicConfiguration("topic1", 3, 3);
     topicConfigurationForTopic1.setConfiguration(Map.of("property1", "value1"));
@@ -58,7 +59,8 @@ class RestoreTopicServiceTest {
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
 
     RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
-        .topicsToRestore(Collections.emptyList())
+        .topicsAllowListRegex(ALL_TOPICS_REGEX)
+        .topicsDenyListRegex(NONE_TOPICS_REGEX)
         .build();
 
 
@@ -89,7 +91,8 @@ class RestoreTopicServiceTest {
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
 
     RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
-        .topicsToRestore(List.of("topic1"))
+        .topicsAllowListRegex("topic1")
+        .topicsDenyListRegex(NONE_TOPICS_REGEX)
         .build();
 
 
@@ -109,6 +112,40 @@ class RestoreTopicServiceTest {
   }
 
   @Test
+  public void shouldOmitTopicsFromDenyListDuringRestoration() {
+    // given
+    TopicConfiguration topicConfigurationForTopic1 = new TopicConfiguration("topic1", 3, 3);
+    topicConfigurationForTopic1.setConfiguration(Map.of("property1", "value1"));
+
+    TopicConfiguration topicConfigurationForTopic2 = new TopicConfiguration("topic2", 3, 3);
+    topicConfigurationForTopic2.setConfiguration(Map.of("property1", "value1"));
+    TopicsConfig topicsConfig = TopicsConfig
+        .of(List.of(topicConfigurationForTopic1, topicConfigurationForTopic2));
+
+    S3Object s3Object = new S3Object();
+    s3Object.setObjectContent(new ByteArrayInputStream(topicsConfig.toJson().getBytes()));
+    when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
+
+    RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
+        .topicsAllowListRegex(ALL_TOPICS_REGEX)
+        .topicsDenyListRegex("topic1")
+        .build();
+
+
+    // when
+    sut.restoreTopics(restoreArgsWrapper);
+
+    // then
+    ArgumentCaptor<List<NewTopic>> newTopics = ArgumentCaptor.forClass(List.class);
+    verify(adminClientService, times(1)).createTopics(newTopics.capture());
+
+
+    assertEquals(newTopics.getValue().size(), 1);
+    List<String> namesOfCreatedTopics = newTopics.getValue().stream().map(NewTopic::name).collect(Collectors.toList());
+    assertTrue(namesOfCreatedTopics.contains("topic2"));
+  }
+
+  @Test
   public void shouldNotCallCreateTopicsOnKafkaWhenInDryRun() {
     // given
     TopicConfiguration topicConfiguration = new TopicConfiguration("topic1", 3, 3);
@@ -121,7 +158,8 @@ class RestoreTopicServiceTest {
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
 
     RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
-        .topicsToRestore(List.of("topic1"))
+        .topicsAllowListRegex(ALL_TOPICS_REGEX)
+        .topicsDenyListRegex(NONE_TOPICS_REGEX)
         .isDryRun(true)
         .build();
 
@@ -146,7 +184,8 @@ class RestoreTopicServiceTest {
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
 
     RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
-        .topicsToRestore(List.of("topic1"))
+        .topicsAllowListRegex("topic1")
+        .topicsDenyListRegex(NONE_TOPICS_REGEX)
         .build();
 
     when(adminClientService.describeAllTopics()).thenReturn(List.of(topicConfiguration));
@@ -157,32 +196,5 @@ class RestoreTopicServiceTest {
 
     // then
     assertEquals(runtimeException.getMessage(), "Some of the topics from configuration already exists");
-  }
-
-  @Test
-  public void shouldThrowExceptionIfThereIsNoConfigBackupForTopicFromTheListToRestore() {
-    // given
-    TopicConfiguration topicConfiguration = new TopicConfiguration("topic2", 3, 3);
-    topicConfiguration.setConfiguration(Map.of("property1", "value1"));
-    TopicsConfig topicsConfig = TopicsConfig
-        .of(List.of(topicConfiguration));
-
-    S3Object s3Object = new S3Object();
-    s3Object.setObjectContent(new ByteArrayInputStream(topicsConfig.toJson().getBytes()));
-    when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
-
-    RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.builder()
-        .topicsToRestore(List.of("topic1"))
-        .build();
-
-    when(adminClientService.describeAllTopics()).thenReturn(List.of(topicConfiguration));
-
-    // when
-    RuntimeException runtimeException = assertThrows(RuntimeException.class,
-        () -> sut.restoreTopics(restoreArgsWrapper));
-
-    // then
-    assertEquals(runtimeException.getMessage(),
-        "Some of the topics configured to be restored does not have configuration backup");
   }
 }
