@@ -28,9 +28,9 @@ public class RestoreMessageS3Service {
 
     return awsS3Service.getBucketObjectKeys(bucketName, prefix, "/")
         .stream()
-        .filter(name -> name.contains("msg_"))
+        .filter(name -> name.contains("msg_"))  //TODO remove filter when offsets moved to separate bucket;
         .sorted(Comparator.naturalOrder())
-        .collect(Collectors.toList()); //TODO remove when offsets moved to separate bucket;
+        .collect(Collectors.toList());
   }
 
   public List<Record> readBatchFile(String key) {

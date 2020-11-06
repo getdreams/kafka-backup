@@ -1,4 +1,4 @@
-package de.azapps.kafkabackup.restore;
+package de.azapps.kafkabackup.restore.topic;
 
 import static de.azapps.kafkabackup.restore.common.RestoreArgsWrapper.ALL_TOPICS_REGEX;
 import static de.azapps.kafkabackup.restore.common.RestoreArgsWrapper.NONE_TOPICS_REGEX;

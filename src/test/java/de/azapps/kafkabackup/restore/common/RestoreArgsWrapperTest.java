@@ -1,4 +1,4 @@
-package de.azapps.kafkabackup.restore;
+package de.azapps.kafkabackup.restore.common;
 
 import static org.junit.jupiter.api.Assertions.*;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
