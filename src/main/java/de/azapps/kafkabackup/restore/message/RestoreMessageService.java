@@ -28,17 +28,13 @@ public class RestoreMessageService {
   private final AwsS3Service awsS3Service;
   ExecutorService executor;
   private final RestoreConfigurationHelper restoreConfigurationHelper;
-  private final RestoreArgsWrapper restoreArgsWrapper;
   private final Map<String, PartitionMessageWriterWorker> partitionWriters;
 
   public RestoreMessageService(AwsS3Service awsS3Service, AdminClientService adminClientService,
-      RestoreArgsWrapper restoreArgsWrapper) {
+      int restoreMessagesMaxThreads) {
     this.awsS3Service = awsS3Service;
     this.restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service);
-    this.restoreArgsWrapper = restoreArgsWrapper;
     this.adminClientService = adminClientService;
-
-    final int restoreMessagesMaxThreads = restoreArgsWrapper.getRestoreMessagesMaxThreads();
     this.executor = Executors.newFixedThreadPool(restoreMessagesMaxThreads);
 
     partitionWriters = new HashMap<>();
@@ -46,7 +42,7 @@ public class RestoreMessageService {
     log.info("RestoreMessageService initiated. Max number of threads: " + restoreMessagesMaxThreads);
   }
 
-  public void restoreMessages() {
+  public void restoreMessages(RestoreArgsWrapper restoreArgsWrapper) {
     TopicsConfig topicsConfig = restoreConfigurationHelper.getTopicsConfig(restoreArgsWrapper.getHashToRestore(),
         restoreArgsWrapper.getConfigBackupBucket());
 
