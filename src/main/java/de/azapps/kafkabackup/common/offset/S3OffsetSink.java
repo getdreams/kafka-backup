@@ -7,6 +7,8 @@ import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.*;
 
 import org.apache.kafka.clients.admin.AdminClient;
@@ -16,8 +18,22 @@ import org.apache.kafka.common.TopicPartition;
 public class S3OffsetSink extends OffsetSink {
     private final AwsS3Service awsS3Service;
     private final String bucketName;
+    private final Clock clock;
 
     private Map<TopicPartition, OffsetStoreS3File> topicOffsets = new HashMap<>();
+
+    public S3OffsetSink(
+        AdminClient adminClient,
+        Long consumerGroupsSyncInterval,
+        AwsS3Service awsS3Service,
+        String bucketName,
+        Clock clock
+    ) {
+        super(adminClient, consumerGroupsSyncInterval);
+        this.awsS3Service = awsS3Service;
+        this.bucketName = bucketName;
+        this.clock = clock;
+    }
 
     public S3OffsetSink(
         AdminClient adminClient,
@@ -28,13 +44,15 @@ public class S3OffsetSink extends OffsetSink {
         super(adminClient, consumerGroupsSyncInterval);
         this.awsS3Service = awsS3Service;
         this.bucketName = bucketName;
+
+        this.clock = Clock.systemUTC();
     }
 
     @Override
     public void writeOffsetsForGroup(String consumerGroup, Map<TopicPartition, OffsetAndMetadata> partitionOffsetsAndMetadata) throws IOException {
         for (TopicPartition tp : partitionOffsetsAndMetadata.keySet()) {
             if (!this.topicOffsets.containsKey(tp)) {
-                this.topicOffsets.put(tp, new OffsetStoreS3File(tp, bucketName, awsS3Service));
+                this.topicOffsets.put(tp, new OffsetStoreS3File(tp, bucketName, awsS3Service, clock));
             }
 
             OffsetStoreS3File offsets = this.topicOffsets.get(tp);
@@ -66,11 +84,13 @@ public class S3OffsetSink extends OffsetSink {
         private final String bucketName;
         private final ObjectMapper mapper = new ObjectMapper();
         private final AwsS3Service awsS3Service;
+        private final Clock clock;
 
-        OffsetStoreS3File(TopicPartition topicPartition, String bucketName, AwsS3Service awsS3Service) throws IOException {
+        OffsetStoreS3File(TopicPartition topicPartition, String bucketName, AwsS3Service awsS3Service, Clock clock) throws IOException {
             this.bucketName = bucketName;
             this.topicPartition = topicPartition;
             this.awsS3Service = awsS3Service;
+            this.clock = clock;
 
             if (awsS3Service.checkIfObjectExists(bucketName, getOffsetFileName())) {
                 groupOffsets = mapper.readValue(awsS3Service.getFile(bucketName, getOffsetFileName()).getObjectContent(), groupOffsetsTypeRef);
@@ -92,7 +112,8 @@ public class S3OffsetSink extends OffsetSink {
         }
 
         private String getOffsetFileName() {
-            return String.format("%s/%03d/offsets.json", topicPartition.topic(), topicPartition.partition());
+            long timestamp = clock.instant().getEpochSecond();
+            return String.format("%s/%03d/%d.json", topicPartition.topic(), topicPartition.partition(), timestamp);
         }
     }
 }
