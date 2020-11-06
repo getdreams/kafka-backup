@@ -144,7 +144,7 @@ public class RestoreMessageService {
       return topicConfiguration.getTopicName() + "." + partitionNumber;
     }
 
-    public void addRestoredMessageInfo(long originalOffset, byte[] key, long newOffset) {
+    public void addRestoredMessageInfo(long originalOffset, byte[] key, Long newOffset) {
       restoredMessageInfoMap.put(originalOffset, new RestoredMessageInfo(originalOffset, key, newOffset));
     }
   }
@@ -153,6 +153,6 @@ public class RestoreMessageService {
   private static class RestoredMessageInfo {
     private final long originalOffset;
     private final byte[] key;
-    private final long newOffset;
+    private final Long newOffset;
   }
 }

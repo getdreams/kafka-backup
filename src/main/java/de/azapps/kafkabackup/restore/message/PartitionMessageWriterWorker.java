@@ -27,6 +27,8 @@ public class PartitionMessageWriterWorker implements Runnable {
   private final RestoreArgsWrapper restoreArgsWrapper;
   private final String identifier;
   private KafkaProducer<byte[], byte[]> kafkaProducer;
+  private long dryRunOffset;
+
 
   public PartitionMessageWriterWorker(
       TopicPartitionToRestore topicPartitionToRestore,
@@ -73,24 +75,30 @@ public class PartitionMessageWriterWorker implements Runnable {
 
   private void initiateProducer(TopicPartitionToRestore topicPartitionToRestore,
       RestoreArgsWrapper restoreArgsWrapper) {
-    Properties props = new Properties();
-    props.put("bootstrap.servers", restoreArgsWrapper.getKafkaBootstrapServers());
-    props.put("acks", "all");
-    props.put("retries", 1);
-    props.put("batch.size", PRODUCER_BATCH_SIZE);
-    props.put("linger.ms", 1);
-    props.put("buffer.memory", 33554432);
-    props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-    props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+    if (!restoreArgsWrapper.isDryRun()) {
+      Properties props = new Properties();
+      props.put("bootstrap.servers", restoreArgsWrapper.getKafkaBootstrapServers());
+      props.put("acks", "all");
+      props.put("retries", 1);
+      props.put("batch.size", PRODUCER_BATCH_SIZE);
+      props.put("linger.ms", 1);
+      props.put("buffer.memory", 33554432);
+      props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+      props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
 
-    props.put("transactional.id", "restore-transactional-id" + topicPartitionToRestore.getTopicPartitionId());
-    this.kafkaProducer = new KafkaProducer<>(props);
-    kafkaProducer.initTransactions();
+      props.put("transactional.id", "restore-transactional-id" + topicPartitionToRestore.getTopicPartitionId());
+      this.kafkaProducer = new KafkaProducer<>(props);
+      kafkaProducer.initTransactions();
+    }
+    else {
+      dryRunOffset = 0l;
+    }
   }
 
   private void produceRecords(List<Record> recordsToProduce) {
     try {
-      kafkaProducer.beginTransaction();
+      beginTransaction();
+
       List<List<Record>> partitionedRecords = Lists.partition(recordsToProduce, PRODUCER_BATCH_SIZE);
 
       for (List<Record> batch : partitionedRecords) {
@@ -102,26 +110,73 @@ public class PartitionMessageWriterWorker implements Runnable {
             return;
           }
 
-          ProducerRecord<byte[], byte[]> producerRecord = new ProducerRecord<>(record.topic(),
-              record.kafkaPartition(),
-              record.timestamp(),
-              record.key(),
-              record.value());
-          Future<RecordMetadata> future = kafkaProducer.send(producerRecord);
+          Future<RecordMetadata> future = produceRecord(record);
+
           futures.add(new Pair<>(record, future));
         });
-        kafkaProducer.commitTransaction();
 
-        for (Pair<Record, Future<RecordMetadata>> recordFuturePair : futures) {
-          RecordMetadata recordMetadata = recordFuturePair.getValue1().get();
-          Record record = recordFuturePair.getValue0();
-          topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), record.key(), recordMetadata.offset());
-        }
+        commitTransaction();
+
+        updateTargetOffsets(futures);
       }
     }
     catch (RuntimeException | InterruptedException | ExecutionException ex) {
       kafkaProducer.close();
       throw new RuntimeException(ex);
+    }
+  }
+
+  private void updateTargetOffsets(List<Pair<Record, Future<RecordMetadata>>> futures)
+      throws InterruptedException, ExecutionException {
+    for (Pair<Record, Future<RecordMetadata>> recordFuturePair : futures) {
+      Record record = recordFuturePair.getValue0();
+
+      if (this.restoreArgsWrapper.isDryRun()) {
+        if (recordFuturePair.getValue1() == null) {
+          log.debug("Dry run and empty future.");
+        }
+        else {
+          throw new RuntimeException("Future not empty in dry run mode for record " + record.kafkaOffset());
+        }
+      }
+      else {
+        RecordMetadata recordMetadata = recordFuturePair.getValue1().get();
+        topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), record.key(), recordMetadata.offset());
+      }
+    }
+  }
+
+  private Future<RecordMetadata> produceRecord(Record record) {
+    ProducerRecord<byte[], byte[]> producerRecord = new ProducerRecord<>(record.topic(),
+        record.kafkaPartition(),
+        record.timestamp(),
+        record.key(),
+        record.value());
+
+    if (this.restoreArgsWrapper.isDryRun()) {
+      log.info("Producing record. Original offset: {}, topic: {}, partition: {}",
+          record.kafkaOffset(),
+          producerRecord.topic(),
+          producerRecord.partition());
+      topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), record.key(), dryRunOffset);
+      dryRunOffset++;
+      return null;
+    }
+    else {
+      topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), record.key(), null);
+      return kafkaProducer.send(producerRecord);
+    }
+  }
+
+  private void commitTransaction() {
+    if (!this.restoreArgsWrapper.isDryRun()) {
+      kafkaProducer.commitTransaction();
+    }
+  }
+
+  private void beginTransaction() {
+    if (!this.restoreArgsWrapper.isDryRun()) {
+      kafkaProducer.beginTransaction();
     }
   }
 }
