@@ -5,7 +5,7 @@ import de.azapps.kafkabackup.restore.RestoreFacade;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import java.util.Arrays;
 
-public class RestoreTopicsTask {
+public class RestoreProcessTask {
 
   public static void main(String[] args) {
     if (args.length != 1) {
@@ -13,16 +13,14 @@ public class RestoreTopicsTask {
           args.length, Arrays.toString(args)));
     }
 
-    System.out.println("Restoring topics with config file: " + args[0]);
+    System.out.println("Restoring backup with config file: " + args[0]);
 
-    RestoreArgsWrapper restoreTopicsArgsWrapper = RestoreArgsWrapper.of(args[0]);
+    RestoreArgsWrapper restoreArgsWrapper = RestoreArgsWrapper.of(args[0]);
 
-    System.out.println("Restore configuration: " + restoreTopicsArgsWrapper.toString());
+    System.out.println("Restore configuration: " + restoreArgsWrapper.toString());
 
+    RestoreFacade restoreFacade = RestoreFacade.initialize(restoreArgsWrapper);
 
-    RestoreFacade restoreFacade = new RestoreFacade(restoreTopicsArgsWrapper);
-
-    restoreFacade.runRestoreProcess();
-
+    restoreFacade.runRestoreProcess(restoreArgsWrapper);
   }
 }

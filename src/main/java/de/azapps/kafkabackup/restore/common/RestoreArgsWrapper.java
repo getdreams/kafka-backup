@@ -13,11 +13,13 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -28,9 +30,6 @@ import lombok.ToString;
 public class RestoreArgsWrapper {
 
 
-  public static final String SHOULD_RESTORE_TOPICS = "restore.shouldRestoreTopics";
-  public static final String SHOULD_RESTORE_MESSAGES = "restore.shouldRestoreMessages";
-  public static final String SHOULD_RESTORE_OFFSETS = "restore.shouldRestoreOffsets";
   public static final String RESTORE_MODE = "restore.mode";
 
   public static final String AWS_S3_REGION = "aws.s3.region";
@@ -38,6 +37,7 @@ public class RestoreArgsWrapper {
   public static final String AWS_S3_PATH_STYLE_ACCESS_ENABLED = "aws.s3.pathStyleAccessEnabled";
 
   public static final String KAFKA_CONFIG_BACKUP_BUCKET = "aws.s3.bucketNameForConfig";
+  public static final String MESSAGE_BACKUP_BUCKET = "aws.s3.bucketNameForMessages";
   public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
 
   public static final String RESTORE_DRY_RUN = "restore.dryRun";
@@ -56,13 +56,14 @@ public class RestoreArgsWrapper {
   private final Boolean pathStyleAccessEnabled;
 
   private final String configBackupBucket;
+  private final String messageBackupBucket;
   private final String kafkaBootstrapServers;
   private final String hashToRestore;
   private final LocalDateTime timeToRestore;
   private final String topicsAllowListRegex;
   private final String topicsDenyListRegex;
   private final boolean isDryRun;
-  private final RestoreMode restoreMode;
+  private final List<RestoreMode> restoreMode;
   private final int restoreMessagesMaxThreads;
 
   public static final List<RestoreArg> args = List.of(
@@ -93,7 +94,9 @@ public class RestoreArgsWrapper {
     builder.kafkaBootstrapServers(properties.getProperty(KAFKA_BOOTSTRAP_SERVERS));
     builder.configBackupBucket(properties.getProperty(KAFKA_CONFIG_BACKUP_BUCKET));
     builder.hashToRestore(properties.getProperty(RESTORE_HASH));
-    builder.restoreMode(RestoreMode.valueOf(properties.getProperty(RESTORE_MODE).toUpperCase()));
+    builder.restoreMode(Arrays.stream(properties.getProperty(RESTORE_MODE).split(",")).sequential()
+        .map(restoreModeName -> RestoreMode.valueOf(restoreModeName.toUpperCase())).collect(Collectors.toList()));
+    builder.messageBackupBucket(properties.getProperty(MESSAGE_BACKUP_BUCKET));
 
     builder.pathStyleAccessEnabled(parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false")));
     builder.isDryRun(parseBoolean(properties.getProperty(RESTORE_DRY_RUN, "true")));

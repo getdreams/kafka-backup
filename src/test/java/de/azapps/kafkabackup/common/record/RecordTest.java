@@ -1,5 +1,6 @@
 package de.azapps.kafkabackup.common.record;
 
+import de.azapps.kafkabackup.helpers.TestRecordFactory;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.header.ConnectHeaders;
@@ -39,7 +40,7 @@ public class RecordTest {
     @Test
     public void equalsIdentityTrueTest() {
         // GIVEN
-        Record a = new Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, headers);
+        Record a = TestRecordFactory.getRecord();
 
         // THEN
         assertEquals(a, a);
@@ -52,13 +53,13 @@ public class RecordTest {
         aHeaders.add("header0-key", new SchemaAndValue(Schema.BYTES_SCHEMA, Arrays.copyOf(header0ValueBytes, header0ValueBytes.length)));
         aHeaders.add("header1-key", new SchemaAndValue(Schema.BYTES_SCHEMA, Arrays.copyOf(header1ValueBytes, header1ValueBytes.length)));
         aHeaders.add("header2-key", new SchemaAndValue(Schema.OPTIONAL_BYTES_SCHEMA, null));
-        Record a = new Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, aHeaders);
+        Record a = TestRecordFactory.getRecord(aHeaders);
 
         ConnectHeaders bHeaders = new ConnectHeaders();
         bHeaders.add("header0-key", new SchemaAndValue(Schema.BYTES_SCHEMA, Arrays.copyOf(header0ValueBytes, header0ValueBytes.length)));
         bHeaders.add("header1-key", new SchemaAndValue(Schema.BYTES_SCHEMA, Arrays.copyOf(header1ValueBytes, header1ValueBytes.length)));
         bHeaders.add("header2-key", new SchemaAndValue(Schema.OPTIONAL_BYTES_SCHEMA, null));
-        Record b = new Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, bHeaders);
+        Record b = TestRecordFactory.getRecord(bHeaders);// Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, bHeaders);
 
         // THEN
         assertEquals(a, b);
@@ -68,7 +69,7 @@ public class RecordTest {
     @Test
     public void equalsFalseBecauseStrictSubsetTest() {
         // GIVEN
-        Record a = new Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, headers);
+        Record a = TestRecordFactory.getRecord();
         Record b = new Record(topic, partition, keyBytes, valueBytes, offset);
 
         // THEN
@@ -82,11 +83,13 @@ public class RecordTest {
         ConnectHeaders aHeaders = new ConnectHeaders();
         aHeaders.add("header0-key", new SchemaAndValue(Schema.BYTES_SCHEMA, Arrays.copyOf(header0ValueBytes, header0ValueBytes.length)));
         aHeaders.add("header1-key", new SchemaAndValue(Schema.BYTES_SCHEMA, Arrays.copyOf(header1ValueBytes, header1ValueBytes.length)));
-        Record a = new Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, aHeaders);
+//        Record a = new Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, aHeaders);
+        Record a = TestRecordFactory.getRecord(aHeaders);
 
         ConnectHeaders bHeaders = new ConnectHeaders();
         bHeaders.add("header0-key", new SchemaAndValue(Schema.BYTES_SCHEMA, Arrays.copyOf(header0ValueBytes, header0ValueBytes.length)));
-        Record b = new Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, bHeaders);
+//        Record b = new Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, bHeaders);
+        Record b = TestRecordFactory.getRecord(bHeaders);
 
         // THEN
         assertNotEquals(a, b);

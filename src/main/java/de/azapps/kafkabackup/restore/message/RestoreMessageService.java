@@ -9,6 +9,7 @@ import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -16,8 +17,8 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.Data;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,24 +26,24 @@ import lombok.extern.slf4j.Slf4j;
 public class RestoreMessageService {
 
   private final AdminClientService adminClientService;
+  private final AwsS3Service awsS3Service;
   ExecutorService executor;
   private final RestoreConfigurationHelper restoreConfigurationHelper;
-  private final RestoreArgsWrapper restoreArgsWrapper;
-  private Map<String, PartitionMessageWriterWorker> partitionWriters;
+  private final Map<String, PartitionMessageWriterWorker> partitionWriters;
 
   public RestoreMessageService(AwsS3Service awsS3Service, AdminClientService adminClientService,
-      RestoreArgsWrapper restoreArgsWrapper) {
+      int restoreMessagesMaxThreads) {
+    this.awsS3Service = awsS3Service;
     this.restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service);
-    this.restoreArgsWrapper = restoreArgsWrapper;
     this.adminClientService = adminClientService;
-
-    final int restoreMessagesMaxThreads = restoreArgsWrapper.getRestoreMessagesMaxThreads();
     this.executor = Executors.newFixedThreadPool(restoreMessagesMaxThreads);
+
+    partitionWriters = new HashMap<>();
 
     log.info("RestoreMessageService initiated. Max number of threads: " + restoreMessagesMaxThreads);
   }
 
-  public void restoreMessages() {
+  public void restoreMessages(RestoreArgsWrapper restoreArgsWrapper) {
     TopicsConfig topicsConfig = restoreConfigurationHelper.getTopicsConfig(restoreArgsWrapper.getHashToRestore(),
         restoreArgsWrapper.getConfigBackupBucket());
 
@@ -51,21 +52,24 @@ public class RestoreMessageService {
 
     partitionsToRestore.stream()
         .forEach(partitionToRestore -> {
-          executor.submit(new PartitionMessageWriterWorker(partitionToRestore,
-              partitionToRestore.getTopicPartitionId()));
+          final PartitionMessageWriterWorker worker = new PartitionMessageWriterWorker(partitionToRestore, awsS3Service,
+              restoreArgsWrapper);
+          partitionWriters.put(worker.getIdentifier(), worker);
+          executor.submit(worker);
         });
 
     while (anyPartitionWriterWaitingOrRunning()) {
       try {
         log.info(
             "Waiting for workers to finish. Partition message workers info: " + partitionMessageWriterWorkersInfo());
-        Thread.sleep(5000L);
+        Thread.sleep(2000L);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        log.error(e.getMessage());
       }
     }
 
-    log.info("All workers finished.Partition message workers info: " + partitionMessageWriterWorkersInfo());
+    executor.shutdownNow();
+    log.info("All workers finished. Partition message workers info: " + partitionMessageWriterWorkersInfo());
   }
 
   private boolean anyPartitionWriterWaitingOrRunning() {
@@ -117,7 +121,6 @@ public class RestoreMessageService {
     return topicPartitions.stream();
   }
 
-  @RequiredArgsConstructor
   @Getter
   @Setter
   public static class TopicPartitionToRestore {
@@ -125,9 +128,28 @@ public class RestoreMessageService {
     final TopicConfiguration topicConfiguration;
     final int partitionNumber;
     private MessageRestorationStatus messageRestorationStatus;
+    private Map<Long, RestoredMessageInfo> restoredMessageInfoMap;
+
+    public TopicPartitionToRestore(TopicConfiguration topicConfiguration, int partitionNumber) {
+      this.topicConfiguration = topicConfiguration;
+      this.partitionNumber = partitionNumber;
+      this.messageRestorationStatus = MessageRestorationStatus.WAITING;
+      this.restoredMessageInfoMap = new HashMap<>();
+    }
 
     public String getTopicPartitionId() {
       return topicConfiguration.getTopicName() + "." + partitionNumber;
     }
+
+    public void addRestoredMessageInfo(long originalOffset, byte[] key, Long newOffset) {
+      restoredMessageInfoMap.put(originalOffset, new RestoredMessageInfo(originalOffset, key, newOffset));
+    }
+  }
+
+  @Data
+  private static class RestoredMessageInfo {
+    private final long originalOffset;
+    private final byte[] key;
+    private final Long newOffset;
   }
 }

@@ -1,7 +1,10 @@
 package de.azapps.kafkabackup.common.record;
 
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import java.util.List;
+import lombok.SneakyThrows;
 import org.apache.kafka.connect.header.ConnectHeaders;
 
 import java.io.IOException;
@@ -35,5 +38,11 @@ public class RecordJSONSerde {
 
     public void write(OutputStream outputStream, Record record) throws IOException {
         mapper.writeValue(outputStream, record);
+    }
+
+    @SneakyThrows
+    public List<Record> readAll(InputStream inputStream) {
+        MappingIterator<Record> iterator = mapper.readerFor(Record.class).readValues(inputStream);
+        return iterator.readAll();
     }
 }

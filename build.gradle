@@ -32,6 +32,7 @@ dependencies {
     compile group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '6.0-alpha-3'
     compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.693'
     compile group: 'com.google.guava', name: 'guava', version: '28.2-jre'
+    compile group: 'org.javatuples', name: 'javatuples', version: '1.2'
     compile group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
     compileOnly 'org.projectlombok:lombok:1.18.12'
     annotationProcessor 'org.projectlombok:lombok:1.18.12'
@@ -72,9 +73,9 @@ test {
     useJUnitPlatform()
 }
 
-task restoreTopics(type: JavaExec) {
+task runRestorationProcess(type: JavaExec) {
     if (project.hasProperty("configPath")) {
-        main = "de.azapps.kafkabackup.common.topic.restore.RestoreTopicsTask"
+        main = "de.azapps.kafkabackup.restore.topic.RestoreTopicsTask"
         group = "Execution"
         classpath = sourceSets.main.runtimeClasspath
 
