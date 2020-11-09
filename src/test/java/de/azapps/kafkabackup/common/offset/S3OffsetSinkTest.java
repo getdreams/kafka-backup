@@ -52,8 +52,8 @@ class S3OffsetSinkTest {
 
         verify(awsS3Service, times(1)).saveFile(bucketName.capture(), fileKey.capture(), any(), any());
 
-        assertEquals(bucketName.getValue(), bucketName);
-        assertEquals(fileKey.getValue(), topicName + clock.instant().getEpochSecond() + ".json");
+        assertEquals(bucketName.getValue(), bucketName.getValue());
+        assertEquals(fileKey.getValue(), topicName + "/000/" + clock.instant().getEpochSecond() + ".json");
     }
 
 }
