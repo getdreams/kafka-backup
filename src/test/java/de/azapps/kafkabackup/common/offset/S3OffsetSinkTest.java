@@ -30,7 +30,7 @@ class S3OffsetSinkTest {
     @Mock
     AwsS3Service awsS3Service;
 
-    Clock clock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+    Clock clock = Clock.fixed(Instant.ofEpochSecond(1234567890), ZoneId.systemDefault());
 
     @BeforeEach
     public void init() {
@@ -52,7 +52,7 @@ class S3OffsetSinkTest {
 
         verify(awsS3Service, times(1)).saveFile(bucketName.capture(), fileKey.capture(), any(), any());
 
-        assertEquals(fileKey.getValue(), topicName + "/000/" + clock.instant().getEpochSecond() + ".json");
+        assertEquals("abc/000/1234567890.json", fileKey.getValue());
     }
 
 }
