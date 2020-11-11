@@ -10,8 +10,6 @@ git clone https://github.com/ryannedolan/kafka.git
 git checkout KIP-382
 ```
 
-
-
 ## Build `kafka-backup`
 
 You should be able to build this with `./gradlew shadowJar`. Once the jar is generated in `build/libs`, include it in `CLASSPATH` (e.g., `export CLASSPATH=.:$CLASSPATH:/fullpath/to/kafka-backup-jar` )
