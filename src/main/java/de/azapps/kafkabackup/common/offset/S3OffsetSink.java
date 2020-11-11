@@ -41,11 +41,7 @@ public class S3OffsetSink extends OffsetSink {
         AwsS3Service awsS3Service,
         String bucketName
     ) {
-        super(adminClient, consumerGroupsSyncInterval);
-        this.awsS3Service = awsS3Service;
-        this.bucketName = bucketName;
-
-        this.clock = Clock.systemUTC();
+        this(adminClient, consumerGroupsSyncInterval, awsS3Service, bucketName, Clock.systemUTC());
     }
 
     @Override
