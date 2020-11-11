@@ -51,6 +51,7 @@ public class BackupSinkTask extends SinkTask {
   // S3-specific:
   private String bucketNameForMessagesBackup;
   private String bucketNameForConfigurationBackup;
+  private String bucketNameForOffsetsBackup;
   private AwsS3Service awsS3Service;
   private int maxBatchMessages;
   private long maxBatchTimeMs;
@@ -73,15 +74,17 @@ public class BackupSinkTask extends SinkTask {
 
     switch (config.storageMode()) {
       case S3:
-        awsS3Service = new AwsS3Service(config.region(), config.endpoint(), config.pathStyleAccessEnabled());
         bucketNameForMessagesBackup = config.messagesBucketName();
-        offsetSink = new S3OffsetSink(adminClient, config.consumerGroupsSyncMaxAgeMs(), awsS3Service,
-            bucketNameForMessagesBackup);
+        bucketNameForConfigurationBackup = config.configurationBucketName();
+        bucketNameForOffsetsBackup = config.offsetsBucketName();
+        minTopicConfigCheckIntervalMs = config.minTopicConfigCheckIntervalMs();
         maxBatchMessages = config.maxBatchMessages();
         maxBatchTimeMs = config.maxBatchTimeMs();
-        minTopicConfigCheckIntervalMs = config.minTopicConfigCheckIntervalMs();
+
+        awsS3Service = new AwsS3Service(config.region(), config.endpoint(), config.pathStyleAccessEnabled());
+        offsetSink = new S3OffsetSink(adminClient, config.consumerGroupsSyncMaxAgeMs(), awsS3Service,
+                bucketNameForOffsetsBackup);
         kafkaConfigReader = new KafkaConfigReader(config.topicConfigBackupProperties(), adminClientService);
-        bucketNameForConfigurationBackup = config.configurationBucketName();
         kafkaConfigWriter = new KafkaConfigWriter(bucketNameForConfigurationBackup, awsS3Service);
         break;
       case DISK:

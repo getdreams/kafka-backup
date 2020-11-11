@@ -29,6 +29,7 @@ class BackupSinkConfig extends AbstractConfig {
   static final String AWS_S3_PATH_STYLE_ACCESS_ENABLED = "aws.s3.PathStyleAccessEnabled";
   static final String AWS_S3_BUCKET_NAME = "aws.s3.bucketName";
   static final String AWS_S3_BUCKET_NAME_FOR_CONFIGURATION = "aws.s3.bucketNameForConfig";
+  static final String AWS_S3_BUCKET_NAME_FOR_OFFSETS = "aws.s3.bucketNameForOffsets";
   static final String STORAGE_MODE = "storage.mode";
   static final String CONSUMER_GROUPS_SYNC_MAX_AGE_MS = "consumer.groups.sync.max.age.ms";
   static final String CONSUMER_OFFSET_SYNC_INTERVAL_MS = "consumer.offset.sync.interval.ms";
@@ -57,9 +58,11 @@ class BackupSinkConfig extends AbstractConfig {
       .define(AWS_S3_PATH_STYLE_ACCESS_ENABLED, ConfigDef.Type.BOOLEAN,
           ConfigDef.Importance.MEDIUM, "AWS S3 Bucket path style access")
       .define(AWS_S3_BUCKET_NAME, ConfigDef.Type.STRING,
-          ConfigDef.Importance.MEDIUM, "AWS S3 Bucket name for messages backup")
+          ConfigDef.Importance.HIGH, "AWS S3 Bucket name for messages backup")
       .define(AWS_S3_BUCKET_NAME_FOR_CONFIGURATION, ConfigDef.Type.STRING,
-          ConfigDef.Importance.MEDIUM, "AWS S3 Bucket name for configuration backup")
+          ConfigDef.Importance.HIGH, "AWS S3 Bucket name for configuration backup")
+      .define(AWS_S3_BUCKET_NAME_FOR_OFFSETS, ConfigDef.Type.STRING,
+          ConfigDef.Importance.HIGH, "AWS S3 Bucket name for consumer group offsets backup")
       .define(CONSUMER_GROUPS_SYNC_MAX_AGE_MS, ConfigDef.Type.LONG, 300000,
           ConfigDef.Importance.MEDIUM, "List of consumer groups for offset sync will be an most this old.")
       .define(CONSUMER_OFFSET_SYNC_INTERVAL_MS, ConfigDef.Type.LONG, 60000,
@@ -147,6 +150,10 @@ class BackupSinkConfig extends AbstractConfig {
 
   String configurationBucketName() {
     return getString(AWS_S3_BUCKET_NAME_FOR_CONFIGURATION);
+  }
+
+  String offsetsBucketName() {
+    return getString(AWS_S3_BUCKET_NAME_FOR_OFFSETS);
   }
 
   String endpoint() {
