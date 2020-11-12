@@ -3,6 +3,8 @@ package de.azapps.kafkabackup.restore;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.common.RestoreMode;
+import de.azapps.kafkabackup.restore.message.RestoreMessageProducer;
+import de.azapps.kafkabackup.restore.message.RestoreMessageS3Service;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
@@ -30,9 +32,11 @@ public class RestoreFacade {
       final AwsS3Service awsS3Service = new AwsS3Service(restoreArgsWrapper.getAwsRegion(),
           restoreArgsWrapper.getAwsEndpoint(),
           restoreArgsWrapper.getPathStyleAccessEnabled());
-      
+
+      RestoreMessageS3Service restoreMessageS3Service = new RestoreMessageS3Service(awsS3Service,
+          restoreArgsWrapper.getMessageBackupBucket());
       final RestoreMessageService restoreMessageService = new RestoreMessageService(awsS3Service, adminClientService,
-          restoreArgsWrapper.getRestoreMessagesMaxThreads());
+          restoreArgsWrapper.getRestoreMessagesMaxThreads(), restoreMessageS3Service);
       final RestoreTopicService restoreTopicService = new RestoreTopicService(adminClientService, awsS3Service);
       final RestoreOffsetService restoreOffsetService = new RestoreOffsetService();
 

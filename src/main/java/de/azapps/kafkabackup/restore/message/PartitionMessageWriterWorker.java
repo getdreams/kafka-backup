@@ -5,6 +5,8 @@ import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,14 +22,14 @@ public class PartitionMessageWriterWorker implements Runnable {
 
   public PartitionMessageWriterWorker(
       TopicPartitionToRestore topicPartitionToRestore,
-      AwsS3Service awsS3Service,
-      RestoreArgsWrapper restoreArgsWrapper) {
+      RestoreArgsWrapper restoreArgsWrapper,
+      RestoreMessageS3Service restoreMessageS3Service,
+      RestoreMessageProducer restoreMessageProducer) {
     this.topicPartitionToRestore = topicPartitionToRestore;
-    this.restoreMessageS3Service = new RestoreMessageS3Service(awsS3Service,
-        restoreArgsWrapper.getMessageBackupBucket());
+    this.restoreMessageS3Service = restoreMessageS3Service;
     this.restoreArgsWrapper = restoreArgsWrapper;
     this.identifier = topicPartitionToRestore.getTopicPartitionId();
-    this.restoreMessageProducer = new RestoreMessageProducer(restoreArgsWrapper, topicPartitionToRestore);
+    this.restoreMessageProducer = restoreMessageProducer;
   }
 
   @Override
@@ -59,6 +61,20 @@ public class PartitionMessageWriterWorker implements Runnable {
     List<Record> records = restoreMessageS3Service.readBatchFile(backupFileKey);
     log.debug("Got {} messages from batch file {}.", records.size(), backupFileKey);
 
-    restoreMessageProducer.produceRecords(records);
+    final Optional<Long> timestampToRestore = this.restoreArgsWrapper.getTimestampToRestore();
+
+    if (timestampToRestore.isPresent()) {
+      List<Record> filtered = records.stream().filter(record -> record.timestamp() <= timestampToRestore.get()).collect(
+          Collectors.toList());
+      if (filtered.size() == 0) {
+        log.info("All messages in batch newer than timestamp to restore: {}", timestampToRestore.get());
+        return;
+      }
+
+      restoreMessageProducer.produceRecords(filtered);
+    }
+    else {
+      restoreMessageProducer.produceRecords(records);
+    }
   }
 }

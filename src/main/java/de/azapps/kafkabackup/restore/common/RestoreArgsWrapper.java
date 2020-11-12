@@ -143,8 +143,9 @@ public class RestoreArgsWrapper {
     }
   }
 
-  public long getTimestampToRestore() {
-    return this.timeToRestore.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+  public Optional<Long> getTimestampToRestore() {
+    return this.timeToRestore != null ?
+        Optional.of(this.timeToRestore.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()) : Optional.empty();
   }
 
   public Map<String, Object> adminConfig() {
