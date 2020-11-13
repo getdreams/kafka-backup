@@ -41,6 +41,9 @@ public class TestRecordFactory {
 
   public static Record getRecordWithOffset(long offset) {
     return  new Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, headers);
+  }
 
+  public static Record getRecordWithOffsetAndTimestamp(long offset, long timestamp) {
+    return  new Record(topic, partition, keyBytes, valueBytes, offset, timestamp, timestampType, headers);
   }
 }

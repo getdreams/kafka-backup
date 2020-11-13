@@ -13,11 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.errors.InvalidTimestampException;
 import org.javatuples.Pair;
 
 @Slf4j
 public class RestoreMessageProducer {
-  private static final int PRODUCER_BATCH_SIZE = 1000;
+  private static final int PRODUCER_BATCH_SIZE = 1;
 
   private final RestoreArgsWrapper restoreArgsWrapper;
   private final TopicPartitionToRestore topicPartitionToRestore;
@@ -55,11 +56,11 @@ public class RestoreMessageProducer {
 
   public void produceRecords(List<Record> recordsToProduce) {
     try {
-      beginTransaction();
 
       List<List<Record>> partitionedRecords = Lists.partition(recordsToProduce, PRODUCER_BATCH_SIZE);
 
       for (List<Record> batch : partitionedRecords) {
+        beginTransaction();
         List<Pair<Record, Future<RecordMetadata>>> futures = new ArrayList<>();
         batch.forEach(record -> {
           if (topicPartitionToRestore.getRestoredMessageInfoMap().containsKey(record.kafkaOffset())) {
@@ -77,6 +78,9 @@ public class RestoreMessageProducer {
 
         updateTargetOffsets(futures);
       }
+    }
+    catch (InvalidTimestampException ex) {
+      kafkaProducer.abortTransaction();
     }
     catch (RuntimeException | InterruptedException | ExecutionException ex) {
       kafkaProducer.close();

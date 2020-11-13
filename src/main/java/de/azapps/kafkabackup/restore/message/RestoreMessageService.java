@@ -30,13 +30,16 @@ public class RestoreMessageService {
   ExecutorService executor;
   private final RestoreConfigurationHelper restoreConfigurationHelper;
   private final Map<String, PartitionMessageWriterWorker> partitionWriters;
+  private final RestoreMessageS3Service restoreMessageS3Service;
 
   public RestoreMessageService(AwsS3Service awsS3Service, AdminClientService adminClientService,
-      int restoreMessagesMaxThreads) {
+      int restoreMessagesMaxThreads,
+      RestoreMessageS3Service restoreMessageS3Service) {
     this.awsS3Service = awsS3Service;
     this.restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service);
     this.adminClientService = adminClientService;
     this.executor = Executors.newFixedThreadPool(restoreMessagesMaxThreads);
+    this.restoreMessageS3Service = restoreMessageS3Service;
 
     partitionWriters = new HashMap<>();
 
@@ -52,8 +55,9 @@ public class RestoreMessageService {
 
     partitionsToRestore.stream()
         .forEach(partitionToRestore -> {
-          final PartitionMessageWriterWorker worker = new PartitionMessageWriterWorker(partitionToRestore, awsS3Service,
-              restoreArgsWrapper);
+          RestoreMessageProducer restoreMessageProducer = new RestoreMessageProducer(restoreArgsWrapper, partitionToRestore);
+          final PartitionMessageWriterWorker worker = new PartitionMessageWriterWorker(partitionToRestore,
+              restoreArgsWrapper, restoreMessageS3Service, restoreMessageProducer);
           partitionWriters.put(worker.getIdentifier(), worker);
           executor.submit(worker);
         });

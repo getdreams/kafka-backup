@@ -3,7 +3,6 @@ package de.azapps.kafkabackup.restore.message;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.record.Record;
-import de.azapps.kafkabackup.common.record.RecordTest;
 import de.azapps.kafkabackup.helpers.TestRecordFactory;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
