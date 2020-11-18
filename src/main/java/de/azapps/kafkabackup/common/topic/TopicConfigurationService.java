@@ -55,6 +55,8 @@ public class TopicConfigurationService {
           log.info("Topic configuration fetched. Last hash: {}, new hash: {}", lastConfigHash,
               topicsConfig.checksum());
 
+          lastTopicConfigurationCheckTime = System.currentTimeMillis();
+
           if (lastConfigHash.equals(topicsConfig.checksum())) {
             log.info("Topic configuration did not change.");
             return;
@@ -63,7 +65,6 @@ public class TopicConfigurationService {
           kafkaConfigWriter.storeConfigBackup(topicsConfig);
           log.debug("Configuration saved. Hash {}", topicsConfig.checksum());
           lastConfigHash = topicsConfig.checksum();
-          lastTopicConfigurationCheckTime = System.currentTimeMillis();
         } catch (RuntimeException ex) {
           log.error("Error occurred while checking topic configuration.", ex);
         } finally {
@@ -74,7 +75,7 @@ public class TopicConfigurationService {
   }
 
   private boolean configurationCheckIntervalElapsed() {
-    log.info("Last check time {} min interval {}",
+    log.info("Last check time {} min interval {} ms",
         LocalDateTime.ofInstant(Instant.ofEpochMilli(lastTopicConfigurationCheckTime), ZoneId.systemDefault()),
         minTopicConfigurationCheckInterval);
     return System.currentTimeMillis() - lastTopicConfigurationCheckTime > minTopicConfigurationCheckInterval;

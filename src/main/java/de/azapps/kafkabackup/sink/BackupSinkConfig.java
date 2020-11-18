@@ -71,8 +71,8 @@ class BackupSinkConfig extends AbstractConfig {
           ConfigDef.Importance.MEDIUM, "Batches will be rotated after this number of messages.")
       .define(MAX_BATCH_TIME_MS, ConfigDef.Type.LONG, 600000,
           ConfigDef.Importance.MEDIUM, "Batches will be rotated after this amount of time.")
-      .define(MIN_CONFIG_CHECK_INTERVAL_MS, ConfigDef.Type.LONG, 300000,
-          ConfigDef.Importance.MEDIUM, "Topic configuration check will be allowed after this interval.")
+      .define(MIN_CONFIG_CHECK_INTERVAL_MS, ConfigDef.Type.LONG, 30 * 60 * 1000,
+          ConfigDef.Importance.MEDIUM, "Topic configuration check will be allowed after this interval. By default 30 min.")
       .define(TOPIC_CONFIG_BACKUP_PROPERTIES, Type.LIST, null,
           Importance.HIGH, "List of config properties which needs to be stored in backup. "
               + "By default(if property is not provided) all available config properties are included in the backup.");
