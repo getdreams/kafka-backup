@@ -27,7 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class TopicConfigurationServiceTest {
 
-  private final long MIN_INTERVAL_MS = 1000L;
+  private final long MIN_INTERVAL_MS = 200L;
 
   private static final TopicConfiguration configForFirstTopic = forTestTopic(TOPIC_NAME_1)
       .withNumberOfPartitions(3)
@@ -91,10 +91,26 @@ public class TopicConfigurationServiceTest {
     topicConfigurationService.runTopicConfigurationCheck();
     Thread.sleep(100L);
     topicConfigurationService.runTopicConfigurationCheck();
-
     // then
     verify(kafkaConfigWriter, times(1)).storeConfigBackup(eq(kafkaTopicConfiguration));
     verify(kafkaConfigReader, times(1)).readCurrentConfig();
+  }
+
+  @Test
+  public void whenRunConfigurationCheckCalledThreeTimes_thenConfigReadOnlyWhenIntervalElapsed () throws InterruptedException {
+    // given
+    TopicConfigurationService topicConfigurationService = initTopicConfigurationService(MIN_INTERVAL_MS);
+    when(kafkaConfigReader.readCurrentConfig()).thenReturn(kafkaTopicConfiguration);
+
+    // when
+    topicConfigurationService.runTopicConfigurationCheck();
+    Thread.sleep(210L);
+    topicConfigurationService.runTopicConfigurationCheck();
+    Thread.sleep(100L);
+    topicConfigurationService.runTopicConfigurationCheck();
+    // then
+    verify(kafkaConfigWriter, times(1)).storeConfigBackup(eq(kafkaTopicConfiguration));
+    verify(kafkaConfigReader, times(2)).readCurrentConfig();
   }
 
   @Test
