@@ -89,7 +89,7 @@ public class TopicConfigurationServiceTest {
 
     // when
     topicConfigurationService.runTopicConfigurationCheck();
-    Thread.sleep(100L);
+    Thread.sleep(100L); // definitely below min interval
     topicConfigurationService.runTopicConfigurationCheck();
     // then
     verify(kafkaConfigWriter, times(1)).storeConfigBackup(eq(kafkaTopicConfiguration));
@@ -104,9 +104,9 @@ public class TopicConfigurationServiceTest {
 
     // when
     topicConfigurationService.runTopicConfigurationCheck();
-    Thread.sleep(210L);
+    Thread.sleep(400L); // definitely above min interval
     topicConfigurationService.runTopicConfigurationCheck();
-    Thread.sleep(100L);
+    Thread.sleep(100L); // definitely below min interval
     topicConfigurationService.runTopicConfigurationCheck();
     // then
     verify(kafkaConfigWriter, times(1)).storeConfigBackup(eq(kafkaTopicConfiguration));
@@ -122,7 +122,7 @@ public class TopicConfigurationServiceTest {
 
     // when
     topicConfigurationService.runTopicConfigurationCheck();
-    Thread.sleep(100L);
+    Thread.sleep(400L); // definitely above min interval
     topicConfigurationService.runTopicConfigurationCheck();
 
     // then
@@ -140,7 +140,7 @@ public class TopicConfigurationServiceTest {
 
     // when
     topicConfigurationService.runTopicConfigurationCheck();
-    Thread.sleep(200L);
+    Thread.sleep(400L); // definitely above min interval
     topicConfigurationService.runTopicConfigurationCheck();
     // then
     verify(kafkaConfigReader, times(2)).readCurrentConfig();
