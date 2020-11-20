@@ -92,7 +92,7 @@ public class AwsS3Service {
     }
   }
 
-  private ObjectListing getObjectList(ListObjectsRequest listObjectsRequest) {
+  public ObjectListing getObjectList(ListObjectsRequest listObjectsRequest) {
     try {
       return s3Client.listObjects(listObjectsRequest);
     } catch (AmazonClientException e) {

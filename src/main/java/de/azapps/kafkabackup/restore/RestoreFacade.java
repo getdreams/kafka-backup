@@ -3,11 +3,14 @@ package de.azapps.kafkabackup.restore;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.common.RestoreMode;
-import de.azapps.kafkabackup.restore.message.RestoreMessageProducer;
 import de.azapps.kafkabackup.restore.message.RestoreMessageS3Service;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService;
+import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
+import de.azapps.kafkabackup.restore.offset.RestoreOffsetService;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
+import java.util.Collections;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -38,7 +41,8 @@ public class RestoreFacade {
       final RestoreMessageService restoreMessageService = new RestoreMessageService(awsS3Service, adminClientService,
           restoreArgsWrapper.getRestoreMessagesMaxThreads(), restoreMessageS3Service);
       final RestoreTopicService restoreTopicService = new RestoreTopicService(adminClientService, awsS3Service);
-      final RestoreOffsetService restoreOffsetService = new RestoreOffsetService();
+      final RestoreOffsetService restoreOffsetService = new RestoreOffsetService(awsS3Service,
+          restoreArgsWrapper.getOffsetBackupBucket(), restoreArgsWrapper.getKafkaBootstrapServers());
 
       RestoreFacade restoreFacade = new RestoreFacade(restoreMessageService, restoreTopicService, restoreOffsetService);
       initializedFacade = restoreFacade;
@@ -53,11 +57,13 @@ public class RestoreFacade {
     if (restoreArgsWrapper.getRestoreMode().contains(RestoreMode.TOPICS)) {
       restoreTopicService.restoreTopics(restoreArgsWrapper);
     }
+    List<TopicPartitionToRestore> topicPartitionToRestore = Collections.emptyList();
     if (restoreArgsWrapper.getRestoreMode().contains(RestoreMode.MESSAGES)) {
-      restoreMessageService.restoreMessages(restoreArgsWrapper);
+      topicPartitionToRestore = restoreMessageService
+          .restoreMessages(restoreArgsWrapper);
     }
     if (restoreArgsWrapper.getRestoreMode().contains(RestoreMode.OFFSETS)) {
-      restoreOffsetService.restoreOffsets();
+      restoreOffsetService.restoreOffsets(topicPartitionToRestore);
     }
   }
 

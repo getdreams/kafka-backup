@@ -38,6 +38,7 @@ public class RestoreArgsWrapper {
 
   public static final String KAFKA_CONFIG_BACKUP_BUCKET = "aws.s3.bucketNameForConfig";
   public static final String MESSAGE_BACKUP_BUCKET = "aws.s3.bucketNameForMessages";
+  public static final String OFFSET_BACKUP_BUCKET = "aws.s3.bucketNameForOffsets";
   public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
 
   public static final String RESTORE_DRY_RUN = "restore.dryRun";
@@ -57,6 +58,7 @@ public class RestoreArgsWrapper {
 
   private final String configBackupBucket;
   private final String messageBackupBucket;
+  private final String offsetBackupBucket;
   private final String kafkaBootstrapServers;
   private final String hashToRestore;
   private final LocalDateTime timeToRestore;
@@ -97,6 +99,7 @@ public class RestoreArgsWrapper {
     builder.restoreMode(Arrays.stream(properties.getProperty(RESTORE_MODE).split(",")).sequential()
         .map(restoreModeName -> RestoreMode.valueOf(restoreModeName.toUpperCase())).collect(Collectors.toList()));
     builder.messageBackupBucket(properties.getProperty(MESSAGE_BACKUP_BUCKET));
+    builder.offsetBackupBucket(properties.getProperty(OFFSET_BACKUP_BUCKET));
 
     builder.pathStyleAccessEnabled(parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false")));
     builder.isDryRun(parseBoolean(properties.getProperty(RESTORE_DRY_RUN, "true")));

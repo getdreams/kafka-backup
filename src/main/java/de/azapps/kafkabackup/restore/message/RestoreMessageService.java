@@ -46,7 +46,7 @@ public class RestoreMessageService {
     log.info("RestoreMessageService initiated. Max number of threads: " + restoreMessagesMaxThreads);
   }
 
-  public void restoreMessages(RestoreArgsWrapper restoreArgsWrapper) {
+  public List<TopicPartitionToRestore> restoreMessages(RestoreArgsWrapper restoreArgsWrapper) {
     TopicsConfig topicsConfig = restoreConfigurationHelper.getTopicsConfig(restoreArgsWrapper.getHashToRestore(),
         restoreArgsWrapper.getConfigBackupBucket());
 
@@ -74,6 +74,7 @@ public class RestoreMessageService {
 
     executor.shutdownNow();
     log.info("All workers finished. Partition message workers info: " + partitionMessageWriterWorkersInfo());
+    return partitionsToRestore;
   }
 
   private boolean anyPartitionWriterWaitingOrRunning() {
@@ -151,7 +152,7 @@ public class RestoreMessageService {
   }
 
   @Data
-  private static class RestoredMessageInfo {
+  public static class RestoredMessageInfo {
     private final long originalOffset;
     private final byte[] key;
     private final Long newOffset;
