@@ -14,12 +14,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 
 @RequiredArgsConstructor
+@Slf4j
 public class RestoreOffsetService {
 
 
@@ -74,12 +76,20 @@ public class RestoreOffsetService {
         Map<Long, RestoredMessageInfo> offsetMap = partitionToRestore.getRestoredMessageInfoMap();
         long maxOriginalOffset = partitionToRestore.getMaxOriginalOffset();
         // Map old offset to new offset
-        long newOffset = getNewOffset(offsetMap, maxOriginalOffset, oldOffset);
-        Map<TopicPartition, OffsetAndMetadata> tps = Optional.ofNullable(newCGTopicPartitionOffsets.get(cg))
-            .orElse(Collections.emptyMap());
-        tps.put(new TopicPartition(topic, partition), new OffsetAndMetadata(newOffset));
-        // Add to list of offsets to commit
-        newCGTopicPartitionOffsets.put(cg, tps);
+        try {
+          long newOffset = getNewOffset(offsetMap, maxOriginalOffset, oldOffset);
+
+          Map<TopicPartition, OffsetAndMetadata> tps = Optional.ofNullable(newCGTopicPartitionOffsets.get(cg))
+              .orElse(new HashMap<>());
+          tps.put(new TopicPartition(topic, partition), new OffsetAndMetadata(newOffset));
+          // Add to list of offsets to commit
+          newCGTopicPartitionOffsets.put(cg, tps);
+        }
+        catch (Exception ex) {
+          log.error("Error occurred when processing consumer group. Consumer group name: {}, topic name: {}, partition number: {}",
+              entry.getKey(), partitionToRestore.getTopicConfiguration().getTopicName(), partitionToRestore.getPartitionNumber());
+          throw ex;
+        }
       });
     });
     // Now we have all the consumer groups to restore, with their new offsets
@@ -92,9 +102,9 @@ public class RestoreOffsetService {
 
       Map<String, Object> groupConsumerConfig = new HashMap<>();
       groupConsumerConfig.put("group.id", cg);
-      groupConsumerConfig.put("cluster.bootstrap.servers", targetBootstrapServers);
-      groupConsumerConfig.put("key.deserializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-      groupConsumerConfig.put("value.deserialier", "org.apache.kafka.common.serialization.ByteArraySerializer");
+      groupConsumerConfig.put("bootstrap.servers", targetBootstrapServers);
+      groupConsumerConfig.put("key.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+      groupConsumerConfig.put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
       Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(groupConsumerConfig);
       // Assign it the topic partitions
       consumer.assign(assignment);
