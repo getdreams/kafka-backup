@@ -71,16 +71,14 @@ public class RestoreOffsetService {
       oldCGOffsets.entrySet().forEach(entry -> {
         String cg = entry.getKey();
         Long oldOffset = entry.getValue();
-        // Map old offset to new offset
         Map<Long, RestoredMessageInfo> offsetMap = partitionToRestore.getRestoredMessageInfoMap();
-        if (!offsetMap.containsKey(oldOffset)) {
-
-          //throw new RuntimeException("Could not find mapped offset in restored cluster!");
-        }
-        Long newOffset = offsetMap.get(oldOffset).getNewOffset();
+        long maxOriginalOffset = partitionToRestore.getMaxOriginalOffset();
+        // Map old offset to new offset
+        long newOffset = getNewOffset(offsetMap, maxOriginalOffset, oldOffset);
         Map<TopicPartition, OffsetAndMetadata> tps = Optional.ofNullable(newCGTopicPartitionOffsets.get(cg))
             .orElse(Collections.emptyMap());
         tps.put(new TopicPartition(topic, partition), new OffsetAndMetadata(newOffset));
+        // Add to list of offsets to commit
         newCGTopicPartitionOffsets.put(cg, tps);
       });
     });
@@ -104,6 +102,24 @@ public class RestoreOffsetService {
       consumer.commitSync(cgOffset);
       consumer.close();
     });
+  }
+
+  private Long getNewOffset(Map<Long, RestoredMessageInfo> offsetMap, long maxOriginalOffset, long oldOffset) {
+    if (offsetMap.containsKey(oldOffset)) {
+      return offsetMap.get(oldOffset).getNewOffset();
+    } else {
+      // The high watermark will not match a restored message, so we need to find the *new* high watermark
+      if (oldOffset > maxOriginalOffset) {
+        if (offsetMap.containsKey(maxOriginalOffset)) {
+          return offsetMap.get(maxOriginalOffset).getNewOffset() + 1;
+        } else {
+          throw new RuntimeException(
+              "Could not find mapped offset in restored cluster, and could not map to a new high watermark either");
+        }
+      } else {
+        return getNewOffset(offsetMap, maxOriginalOffset, oldOffset + 1);
+      }
+    }
   }
 
   private Map<String, Long> getOffsetBackups(String topic, int partition) {
