@@ -74,7 +74,8 @@ public class RestoreOffsetService {
         // Map old offset to new offset
         Map<Long, RestoredMessageInfo> offsetMap = partitionToRestore.getRestoredMessageInfoMap();
         if (!offsetMap.containsKey(oldOffset)) {
-          throw new RuntimeException("Could not find mapped offset in restored cluster!");
+
+          //throw new RuntimeException("Could not find mapped offset in restored cluster!");
         }
         Long newOffset = offsetMap.get(oldOffset).getNewOffset();
         Map<TopicPartition, OffsetAndMetadata> tps = Optional.ofNullable(newCGTopicPartitionOffsets.get(cg))

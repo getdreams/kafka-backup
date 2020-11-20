@@ -134,6 +134,7 @@ public class RestoreMessageService {
     final int partitionNumber;
     private MessageRestorationStatus messageRestorationStatus;
     private Map<Long, RestoredMessageInfo> restoredMessageInfoMap;
+    private long maxOriginalOffset = 0L;
 
     public TopicPartitionToRestore(TopicConfiguration topicConfiguration, int partitionNumber) {
       this.topicConfiguration = topicConfiguration;
@@ -148,6 +149,7 @@ public class RestoreMessageService {
 
     public void addRestoredMessageInfo(long originalOffset, byte[] key, Long newOffset) {
       restoredMessageInfoMap.put(originalOffset, new RestoredMessageInfo(originalOffset, key, newOffset));
+      maxOriginalOffset = Math.max(maxOriginalOffset, originalOffset);
     }
   }
 
