@@ -27,51 +27,51 @@ public class TopicConfigurationService {
   Semaphore configurationCheckSemaphore = new Semaphore(1);
 
   public void runTopicConfigurationCheck() {
+    log.debug("Starting Configuration check thread.");
+    new Thread((() -> {
+      checkTopicConfiguration();
+    })).start();
+  }
+
+  // Public and synchronous for unit-testing
+  public void checkTopicConfiguration() {
     if (kafkaConfigWriter == null) {
       log.warn("No KafkaConfigWriter provided. Skipping configuration check.");
       return;
     }
 
-    log.debug("Configuration check run.");
     if (!configurationCheckIntervalElapsed()) {
       log.debug("Configuration check interval not elapsed. Skipping check.");
-
       return;
     }
-    checkTopicConfiguration();
-  }
 
-  private void checkTopicConfiguration() {
+    final boolean canPerformCheck = configurationCheckSemaphore.tryAcquire();
 
-    new Thread((() -> {
-      final boolean canPerformCheck = configurationCheckSemaphore.tryAcquire();
+    if (canPerformCheck) {
+      try {
+        TopicsConfig topicsConfig = kafkaConfigReader.readCurrentConfig();
 
-      if (canPerformCheck) {
-        try {
-          TopicsConfig topicsConfig = kafkaConfigReader.readCurrentConfig();
+        log.debug("Topic config: {}", topicsConfig.toJson());
 
-          log.debug("Topic config: {}", topicsConfig.toJson());
+        log.info("Topic configuration fetched. Last hash: {}, new hash: {}", lastConfigHash,
+            topicsConfig.checksum());
 
-          log.info("Topic configuration fetched. Last hash: {}, new hash: {}", lastConfigHash,
-              topicsConfig.checksum());
+        lastTopicConfigurationCheckTime = System.currentTimeMillis();
 
-          lastTopicConfigurationCheckTime = System.currentTimeMillis();
-
-          if (lastConfigHash.equals(topicsConfig.checksum())) {
-            log.info("Topic configuration did not change.");
-            return;
-          }
-
-          kafkaConfigWriter.storeConfigBackup(topicsConfig);
-          log.debug("Configuration saved. Hash {}", topicsConfig.checksum());
-          lastConfigHash = topicsConfig.checksum();
-        } catch (RuntimeException ex) {
-          log.error("Error occurred while checking topic configuration.", ex);
-        } finally {
-          configurationCheckSemaphore.release();
+        if (lastConfigHash.equals(topicsConfig.checksum())) {
+          log.info("Topic configuration did not change.");
+          return;
         }
+
+        kafkaConfigWriter.storeConfigBackup(topicsConfig);
+        log.debug("Configuration saved. Hash {}", topicsConfig.checksum());
+        lastConfigHash = topicsConfig.checksum();
+      } catch (RuntimeException ex) {
+        log.error("Error occurred while checking topic configuration.", ex);
+      } finally {
+        configurationCheckSemaphore.release();
       }
-    })).start();
+    }
   }
 
   private boolean configurationCheckIntervalElapsed() {
