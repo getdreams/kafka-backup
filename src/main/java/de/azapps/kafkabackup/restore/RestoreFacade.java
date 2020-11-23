@@ -63,7 +63,7 @@ public class RestoreFacade {
           .restoreMessages(restoreArgsWrapper);
     }
     if (restoreArgsWrapper.getRestoreMode().contains(RestoreMode.OFFSETS)) {
-      restoreOffsetService.restoreOffsets(topicPartitionToRestore);
+      restoreOffsetService.restoreOffsets(topicPartitionToRestore, restoreArgsWrapper.isDryRun());
     }
   }
 

@@ -3,8 +3,8 @@ package de.azapps.kafkabackup.restore.offset;
 import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService.RestoredMessageInfo;
+import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.Collections;
 import java.util.Comparator;
@@ -29,38 +29,12 @@ public class RestoreOffsetService {
   private final String bucketName;
   private final String targetBootstrapServers;
 
-  //  What we have:
-//
-//      - List of (topics, partition) to restore. Containing:
-//      - Offset mapping: (Old) Offset -> (New) Offset
-//
-//
-//  Translate function:
-//  // The S3 stuff
-//
-//  CG_Map: consumer group -> List<(Topic, Partition, Offset)>
-//
-//  For each (topic, partition):
-//      - Download the offset.json file
-//    - Use the offset mapping to translate to new offsets
-//    - Populate the CG_Map
-//
-//
-//
-//  Restoration function:
-//  // The kafka stuff
-//
-//  For each cg in CG_Map:
-//      - Create consumer with this CG_Map
-//    - commit all the topic, partition, offsets
-
-
-  public void restoreOffsets(List<TopicPartitionToRestore> partitionsToRestore) {
+  public void restoreOffsets(List<TopicPartitionToRestore> partitionsToRestore, boolean isDryRun) {
+    log.info("Restoring offsets. Dry run mode: {}", isDryRun);
 
     // consumergroup -> topicpartition -> (new) offset
     Map<String, Map<TopicPartition, OffsetAndMetadata>> newCGTopicPartitionOffsets = new HashMap<>();
 
-    // For each (topic, partition)
     partitionsToRestore.forEach(partitionToRestore -> {
       String topic = partitionToRestore.getTopicConfiguration().getTopicName();
       int partition = partitionToRestore.getPartitionNumber();
@@ -69,10 +43,7 @@ public class RestoreOffsetService {
       Map<String, Long> oldCGOffsets = getOffsetBackups(partitionToRestore.getTopicConfiguration().getTopicName(),
           partitionToRestore.getPartitionNumber());
 
-      // For each consumer group
-      oldCGOffsets.entrySet().forEach(entry -> {
-        String cg = entry.getKey();
-        Long oldOffset = entry.getValue();
+      oldCGOffsets.forEach((cg, oldOffset) -> {
         Map<Long, RestoredMessageInfo> offsetMap = partitionToRestore.getRestoredMessageInfoMap();
         long maxOriginalOffset = partitionToRestore.getMaxOriginalOffset();
         // Map old offset to new offset
@@ -84,33 +55,37 @@ public class RestoreOffsetService {
           tps.put(new TopicPartition(topic, partition), new OffsetAndMetadata(newOffset));
           // Add to list of offsets to commit
           newCGTopicPartitionOffsets.put(cg, tps);
-        }
-        catch (Exception ex) {
-          log.error("Error occurred when processing consumer group. Consumer group name: {}, topic name: {}, partition number: {}",
-              entry.getKey(), partitionToRestore.getTopicConfiguration().getTopicName(), partitionToRestore.getPartitionNumber());
+        } catch (Exception ex) {
+          log.error(
+              "Error occurred when processing consumer group. Consumer group name: {}, topic name: {}, partition number: {}",
+              cg, partitionToRestore.getTopicConfiguration().getTopicName(),
+              partitionToRestore.getPartitionNumber());
           throw ex;
         }
       });
     });
-    // Now we have all the consumer groups to restore, with their new offsets
-    // For each consumer group
-    newCGTopicPartitionOffsets.entrySet().forEach(entry -> {
-      String cg = entry.getKey();
-      Map<TopicPartition, OffsetAndMetadata> cgOffset = entry.getValue();
-      Set<TopicPartition> assignment = cgOffset.keySet();
-      // Create a consumer
 
-      Map<String, Object> groupConsumerConfig = new HashMap<>();
-      groupConsumerConfig.put("group.id", cg);
-      groupConsumerConfig.put("bootstrap.servers", targetBootstrapServers);
-      groupConsumerConfig.put("key.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
-      groupConsumerConfig.put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
-      Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(groupConsumerConfig);
-      // Assign it the topic partitions
-      consumer.assign(assignment);
-      // Commit the offsets
-      consumer.commitSync(cgOffset);
-      consumer.close();
+    newCGTopicPartitionOffsets.forEach((cg, cgOffsets) -> {
+
+      if (isDryRun) {
+        log.info("Committing offsets for consumer group {} dry run mode.", cg);
+        cgOffsets.forEach((tp, offset) ->
+            log.info("Topic: {}, Partition: {}, Offset: {}", tp.topic(), tp.partition(), offset.offset()));
+
+      } else {
+        Set<TopicPartition> topicPartitions = cgOffsets.keySet();
+
+        Map<String, Object> groupConsumerConfig = new HashMap<>();
+        groupConsumerConfig.put("group.id", cg);
+        groupConsumerConfig.put("bootstrap.servers", targetBootstrapServers);
+        groupConsumerConfig.put("key.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+        groupConsumerConfig.put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+
+        Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(groupConsumerConfig);
+        consumer.assign(topicPartitions);
+        consumer.commitSync(cgOffsets);
+        consumer.close();
+      }
     });
   }
 

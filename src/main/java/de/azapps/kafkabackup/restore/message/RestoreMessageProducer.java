@@ -50,7 +50,7 @@ public class RestoreMessageProducer {
       kafkaProducer.initTransactions();
     }
     else {
-      dryRunOffset = 0l;
+      dryRunOffset = 0L;
     }
   }
 
@@ -96,12 +96,13 @@ public class RestoreMessageProducer {
         record.value());
 
     if (this.restoreArgsWrapper.isDryRun()) {
-      log.info("Producing record. Original offset: {}, topic: {}, partition: {}",
+      log.info("Producing record. Original offset: {}, topic: {}, partition: {}, new offset: {}",
           record.kafkaOffset(),
           producerRecord.topic(),
-          producerRecord.partition());
+          producerRecord.partition(),
+          dryRunOffset);
       topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), record.key(), dryRunOffset);
-      dryRunOffset++;
+      dryRunOffset+=2;
       return null;
     }
     else {
