@@ -26,15 +26,7 @@ public class TopicConfigurationService {
 
   Semaphore configurationCheckSemaphore = new Semaphore(1);
 
-  public void runTopicConfigurationCheck() {
-    log.debug("Starting Configuration check thread.");
-    new Thread((() -> {
-      checkTopicConfiguration();
-    })).start();
-  }
-
-  // Public and synchronous for unit-testing
-  public void checkTopicConfiguration() {
+  public void syncTopicConfiguration() {
     if (kafkaConfigWriter == null) {
       log.warn("No KafkaConfigWriter provided. Skipping configuration check.");
       return;

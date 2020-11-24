@@ -72,7 +72,7 @@ public class TopicConfigurationServiceTest {
     when(kafkaConfigReader.readCurrentConfig()).thenReturn(kafkaTopicConfiguration);
 
     // when
-    topicConfigurationService.checkTopicConfiguration();
+    topicConfigurationService.syncTopicConfiguration();
 
     // then
     ArgumentCaptor<TopicsConfig> configuration = ArgumentCaptor.forClass(TopicsConfig.class);
@@ -88,9 +88,9 @@ public class TopicConfigurationServiceTest {
     when(kafkaConfigReader.readCurrentConfig()).thenReturn(kafkaTopicConfiguration);
 
     // when
-    topicConfigurationService.checkTopicConfiguration();
+    topicConfigurationService.syncTopicConfiguration();
     Thread.sleep(100L); // definitely below min interval
-    topicConfigurationService.checkTopicConfiguration();
+    topicConfigurationService.syncTopicConfiguration();
     // then
     verify(kafkaConfigWriter, times(1)).storeConfigBackup(eq(kafkaTopicConfiguration));
     verify(kafkaConfigReader, times(1)).readCurrentConfig();
@@ -103,11 +103,11 @@ public class TopicConfigurationServiceTest {
     when(kafkaConfigReader.readCurrentConfig()).thenReturn(kafkaTopicConfiguration);
 
     // when
-    topicConfigurationService.checkTopicConfiguration();
+    topicConfigurationService.syncTopicConfiguration();
     Thread.sleep(400L); // definitely above min interval
-    topicConfigurationService.checkTopicConfiguration();
+    topicConfigurationService.syncTopicConfiguration();
     Thread.sleep(100L); // definitely below min interval
-    topicConfigurationService.checkTopicConfiguration();
+    topicConfigurationService.syncTopicConfiguration();
     // then
     verify(kafkaConfigWriter, times(1)).storeConfigBackup(eq(kafkaTopicConfiguration));
     verify(kafkaConfigReader, times(2)).readCurrentConfig();
@@ -121,9 +121,9 @@ public class TopicConfigurationServiceTest {
     when(kafkaConfigReader.readCurrentConfig()).thenReturn(kafkaTopicConfiguration);
 
     // when
-    topicConfigurationService.checkTopicConfiguration();
+    topicConfigurationService.syncTopicConfiguration();
     Thread.sleep(400L); // definitely above min interval
-    topicConfigurationService.checkTopicConfiguration();
+    topicConfigurationService.syncTopicConfiguration();
 
     // then
     verify(kafkaConfigWriter, times(1)).storeConfigBackup(eq(kafkaTopicConfiguration));
@@ -139,9 +139,9 @@ public class TopicConfigurationServiceTest {
         .thenReturn(kafkaTopicNewConfiguration);
 
     // when
-    topicConfigurationService.checkTopicConfiguration();
+    topicConfigurationService.syncTopicConfiguration();
     Thread.sleep(400L); // definitely above min interval
-    topicConfigurationService.checkTopicConfiguration();
+    topicConfigurationService.syncTopicConfiguration();
     // then
     verify(kafkaConfigReader, times(2)).readCurrentConfig();
     verify(kafkaConfigWriter, times(1)).storeConfigBackup(eq(kafkaTopicConfiguration));

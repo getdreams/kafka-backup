@@ -168,7 +168,14 @@ public class BackupSinkTask extends SinkTask {
         // In the S3 storage mode, we let kafka take care of offsets. So no call to context.offset here.
     }
 
-    topicConfigurationService.runTopicConfigurationCheck();
+    runTopicConfigurationCheck();
+  }
+
+  private void runTopicConfigurationCheck() {
+    log.debug("Starting Topic Configuration sync.");
+    new Thread((() -> {
+      topicConfigurationService.syncTopicConfiguration();
+    })).start();
   }
 
   private PartitionWriter newPartitionWriter(TopicPartition tp) {
@@ -219,7 +226,7 @@ public class BackupSinkTask extends SinkTask {
 
   public void flush() {
     log.info("Flushing");
-    topicConfigurationService.runTopicConfigurationCheck();
+    runTopicConfigurationCheck();
 
     // Note: we must iterate over all assigned partitions here,
     // since time-based rotation might kick in for partitions not present in last call to put().
