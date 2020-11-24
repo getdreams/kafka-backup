@@ -45,6 +45,7 @@ public class RestoreMessageProducer {
       props.putAll(restoreArgsWrapper.adminConfig());
 
       props.put("transactional.id", "restore-transactional-id" + topicPartitionToRestore.getTopicPartitionId());
+      props.putAll(restoreArgsWrapper.saslConfig());
       this.kafkaProducer = new KafkaProducer<>(props);
       kafkaProducer.initTransactions();
     }

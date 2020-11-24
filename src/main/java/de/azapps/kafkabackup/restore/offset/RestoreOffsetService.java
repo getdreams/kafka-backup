@@ -3,6 +3,7 @@ package de.azapps.kafkabackup.restore.offset;
 import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService.RestoredMessageInfo;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
@@ -27,7 +28,7 @@ public class RestoreOffsetService {
 
   private final AwsS3Service awsS3Service;
   private final String bucketName;
-  private final String targetBootstrapServers;
+  private final RestoreArgsWrapper restoreArgsWrapper;
 
   public void restoreOffsets(List<TopicPartitionToRestore> partitionsToRestore, boolean isDryRun) {
     log.info("Restoring offsets. Dry run mode: {}", isDryRun);
@@ -77,9 +78,9 @@ public class RestoreOffsetService {
 
         Map<String, Object> groupConsumerConfig = new HashMap<>();
         groupConsumerConfig.put("group.id", cg);
-        groupConsumerConfig.put("bootstrap.servers", targetBootstrapServers);
         groupConsumerConfig.put("key.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
         groupConsumerConfig.put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
+        groupConsumerConfig.putAll(restoreArgsWrapper.saslConfig());
 
         Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(groupConsumerConfig);
         consumer.assign(topicPartitions);

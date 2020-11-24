@@ -30,7 +30,7 @@ public class RestoreFacade {
     if (initializedFacade == null) {
 
       final AdminClientService adminClientService = new AdminClientService(
-          AdminClient.create(restoreArgsWrapper.adminConfig()));
+          AdminClient.create(restoreArgsWrapper.saslConfig()));
 
       final AwsS3Service awsS3Service = new AwsS3Service(restoreArgsWrapper.getAwsRegion(),
           restoreArgsWrapper.getAwsEndpoint(),
@@ -42,7 +42,7 @@ public class RestoreFacade {
           restoreArgsWrapper.getRestoreMessagesMaxThreads(), restoreMessageS3Service);
       final RestoreTopicService restoreTopicService = new RestoreTopicService(adminClientService, awsS3Service);
       final RestoreOffsetService restoreOffsetService = new RestoreOffsetService(awsS3Service,
-          restoreArgsWrapper.getOffsetBackupBucket(), restoreArgsWrapper.getKafkaBootstrapServers());
+          restoreArgsWrapper.getOffsetBackupBucket(), restoreArgsWrapper);
 
       RestoreFacade restoreFacade = new RestoreFacade(restoreMessageService, restoreTopicService, restoreOffsetService);
       initializedFacade = restoreFacade;
