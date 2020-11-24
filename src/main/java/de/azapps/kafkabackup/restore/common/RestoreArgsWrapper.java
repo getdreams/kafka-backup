@@ -151,19 +151,19 @@ public class RestoreArgsWrapper {
         .map(timeToRestore -> timeToRestore.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
   }
 
-  public Map<String, Object> adminConfig() {
+  public Map<String, Object> saslConfig() {
     Map<String, Object> props = new HashMap<>();
     // First use envvars to populate certain props
-    String saslMechanism = System.getenv("CONNECT_ADMIN_SASL_MECHANISM");
+    String saslMechanism = System.getenv("RESTORE_PROCESS_SASL_MECHANISM");
     if (saslMechanism != null) {
       props.put("sasl.mechanism", saslMechanism);
     }
-    String securityProtocol = System.getenv("CONNECT_ADMIN_SECURITY_PROTOCOL");
+    String securityProtocol = System.getenv("RESTORE_PROCESS_SECURITY_PROTOCOL");
     if (securityProtocol != null) {
       props.put("security.protocol", securityProtocol);
     }
     // NOTE: this is secret, so we *cannot* put it in the task config
-    String saslJaasConfig = System.getenv("CONNECT_ADMIN_SASL_JAAS_CONFIG");
+    String saslJaasConfig = System.getenv("RESTORE_PROCESS_SASL_JAAS_CONFIG");
     if (saslJaasConfig != null) {
       props.put("sasl.jaas.config", saslJaasConfig);
     }

@@ -36,7 +36,6 @@ public class RestoreMessageProducer {
       RestoreArgsWrapper restoreArgsWrapper) {
     if (!restoreArgsWrapper.isDryRun()) {
       Properties props = new Properties();
-      props.put("bootstrap.servers", restoreArgsWrapper.getKafkaBootstrapServers());
       props.put("acks", "all");
       props.put("retries", 1);
       props.put("batch.size", PRODUCER_BATCH_SIZE);
@@ -46,6 +45,7 @@ public class RestoreMessageProducer {
       props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
 
       props.put("transactional.id", "restore-transactional-id" + topicPartitionToRestore.getTopicPartitionId());
+      props.putAll(restoreArgsWrapper.saslConfig());
       this.kafkaProducer = new KafkaProducer<>(props);
       kafkaProducer.initTransactions();
     }
