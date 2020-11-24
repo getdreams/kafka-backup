@@ -62,9 +62,27 @@ public class RestoreFacade {
       topicPartitionToRestore = restoreMessageService
           .restoreMessages(restoreArgsWrapper);
     }
+
+    saveOffsetMaps(topicPartitionToRestore);
+
     if (restoreArgsWrapper.getRestoreMode().contains(RestoreMode.OFFSETS)) {
+      restoreOffsetMaps(restoreArgsWrapper.getOffsetFileName(), topicPartitionToRestore);
+
       restoreOffsetService.restoreOffsets(topicPartitionToRestore, restoreArgsWrapper.isDryRun());
     }
+  }
+
+  private void saveOffsetMaps(List<TopicPartitionToRestore> topicPartitionToRestore) {
+
+  }
+
+  private void restoreOffsetMaps(String fileName, List<TopicPartitionToRestore> topicPartitionsToRestore) {
+    List<Map<>>
+
+    topicPartitionsToRestore.forEach(
+        topicPartitionToRestore ->
+            topicPartitionToRestore.setRestoredMessageInfoMap()
+    );
   }
 
 }

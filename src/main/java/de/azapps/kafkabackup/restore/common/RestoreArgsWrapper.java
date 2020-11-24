@@ -67,6 +67,7 @@ public class RestoreArgsWrapper {
   private final boolean isDryRun;
   private final List<RestoreMode> restoreMode;
   private final int restoreMessagesMaxThreads;
+  private final String offsetFileName;
 
   public static final List<RestoreArg> args = List.of(
       param(singleParam(AWS_S3_REGION).isRequired(true)),
@@ -172,4 +173,5 @@ public class RestoreArgsWrapper {
 
     return props;
   }
+
 }
