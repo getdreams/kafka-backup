@@ -18,7 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -110,7 +109,7 @@ public class RestoreMessageService {
           errorWorkers.size()));
 
       if (runningWorkers.size() > 0) {
-        infoBuilder.append("Running workers:");
+        infoBuilder.append("\nRunning workers:");
         runningWorkers.forEach(worker -> {
           final TopicPartitionToRestore topicPartitionToRestore = worker.getTopicPartitionToRestore();
           infoBuilder.append(String.format("\nWorker{Id:%s, Topic:%s, Partition: %s}", worker.getIdentifier(), topicPartitionToRestore.topicConfiguration.getTopicName(),
@@ -118,9 +117,9 @@ public class RestoreMessageService {
         });
       }
 
-    if (runningWorkers.size() > 0) {
+    if (errorWorkers.size() > 0) {
       infoBuilder.append("Error workers:");
-      runningWorkers.forEach(worker -> {
+      errorWorkers.forEach(worker -> {
         final TopicPartitionToRestore topicPartitionToRestore = worker.getTopicPartitionToRestore();
         infoBuilder.append(String.format("\nWorker{Id:%s, Topic:%s, Partition: %s}", worker.getIdentifier(), topicPartitionToRestore.topicConfiguration.getTopicName(),
             topicPartitionToRestore.getPartitionNumber()));

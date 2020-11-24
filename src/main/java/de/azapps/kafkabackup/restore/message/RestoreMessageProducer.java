@@ -42,7 +42,7 @@ public class RestoreMessageProducer {
       props.put("buffer.memory", 33554432);
       props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
       props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-      props.putAll(restoreArgsWrapper.adminConfig());
+      props.putAll(restoreArgsWrapper.saslConfig());
 
       props.put("transactional.id", "restore-transactional-id" + topicPartitionToRestore.getTopicPartitionId());
       props.putAll(restoreArgsWrapper.saslConfig());
