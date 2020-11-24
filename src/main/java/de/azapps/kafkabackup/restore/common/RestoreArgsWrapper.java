@@ -38,6 +38,7 @@ public class RestoreArgsWrapper {
 
   public static final String KAFKA_CONFIG_BACKUP_BUCKET = "aws.s3.bucketNameForConfig";
   public static final String MESSAGE_BACKUP_BUCKET = "aws.s3.bucketNameForMessages";
+  public static final String OFFSET_BACKUP_BUCKET = "aws.s3.bucketNameForOffsets";
   public static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
 
   public static final String RESTORE_DRY_RUN = "restore.dryRun";
@@ -57,6 +58,7 @@ public class RestoreArgsWrapper {
 
   private final String configBackupBucket;
   private final String messageBackupBucket;
+  private final String offsetBackupBucket;
   private final String kafkaBootstrapServers;
   private final String hashToRestore;
   private final LocalDateTime timeToRestore;
@@ -97,6 +99,7 @@ public class RestoreArgsWrapper {
     builder.restoreMode(Arrays.stream(properties.getProperty(RESTORE_MODE).split(",")).sequential()
         .map(restoreModeName -> RestoreMode.valueOf(restoreModeName.toUpperCase())).collect(Collectors.toList()));
     builder.messageBackupBucket(properties.getProperty(MESSAGE_BACKUP_BUCKET));
+    builder.offsetBackupBucket(properties.getProperty(OFFSET_BACKUP_BUCKET));
 
     builder.pathStyleAccessEnabled(parseBoolean(properties.getProperty(AWS_S3_PATH_STYLE_ACCESS_ENABLED, "false")));
     builder.isDryRun(parseBoolean(properties.getProperty(RESTORE_DRY_RUN, "true")));
@@ -148,19 +151,19 @@ public class RestoreArgsWrapper {
         .map(timeToRestore -> timeToRestore.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
   }
 
-  public Map<String, Object> adminConfig() {
+  public Map<String, Object> saslConfig() {
     Map<String, Object> props = new HashMap<>();
     // First use envvars to populate certain props
-    String saslMechanism = System.getenv("CONNECT_ADMIN_SASL_MECHANISM");
+    String saslMechanism = System.getenv("RESTORE_PROCESS_SASL_MECHANISM");
     if (saslMechanism != null) {
       props.put("sasl.mechanism", saslMechanism);
     }
-    String securityProtocol = System.getenv("CONNECT_ADMIN_SECURITY_PROTOCOL");
+    String securityProtocol = System.getenv("RESTORE_PROCESS_SECURITY_PROTOCOL");
     if (securityProtocol != null) {
       props.put("security.protocol", securityProtocol);
     }
     // NOTE: this is secret, so we *cannot* put it in the task config
-    String saslJaasConfig = System.getenv("CONNECT_ADMIN_SASL_JAAS_CONFIG");
+    String saslJaasConfig = System.getenv("RESTORE_PROCESS_SASL_JAAS_CONFIG");
     if (saslJaasConfig != null) {
       props.put("sasl.jaas.config", saslJaasConfig);
     }

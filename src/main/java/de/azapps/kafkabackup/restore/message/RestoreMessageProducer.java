@@ -36,7 +36,6 @@ public class RestoreMessageProducer {
       RestoreArgsWrapper restoreArgsWrapper) {
     if (!restoreArgsWrapper.isDryRun()) {
       Properties props = new Properties();
-      props.put("bootstrap.servers", restoreArgsWrapper.getKafkaBootstrapServers());
       props.put("acks", "all");
       props.put("retries", 1);
       props.put("batch.size", PRODUCER_BATCH_SIZE);
@@ -46,11 +45,12 @@ public class RestoreMessageProducer {
       props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
 
       props.put("transactional.id", "restore-transactional-id" + topicPartitionToRestore.getTopicPartitionId());
+      props.putAll(restoreArgsWrapper.saslConfig());
       this.kafkaProducer = new KafkaProducer<>(props);
       kafkaProducer.initTransactions();
     }
     else {
-      dryRunOffset = 0l;
+      dryRunOffset = 0L;
     }
   }
 
@@ -96,12 +96,13 @@ public class RestoreMessageProducer {
         record.value());
 
     if (this.restoreArgsWrapper.isDryRun()) {
-      log.info("Producing record. Original offset: {}, topic: {}, partition: {}",
+      log.info("Producing record. Original offset: {}, topic: {}, partition: {}, new offset: {}",
           record.kafkaOffset(),
           producerRecord.topic(),
-          producerRecord.partition());
+          producerRecord.partition(),
+          dryRunOffset);
       topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), record.key(), dryRunOffset);
-      dryRunOffset++;
+      dryRunOffset+=2;
       return null;
     }
     else {

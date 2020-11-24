@@ -73,7 +73,8 @@ public class RestoreTopicService {
     if (existingTopics.size() > 0) {
       log.error("Some of the topics from configuration already exists - restore has been canceled. Existing topics: {}",
           existingTopics);
-      throw new RuntimeException("Some of the topics from configuration already exists");
+      throw new RuntimeException(String.format("Some of the topics from configuration already exists. Existing topics: %s"
+          ,existingTopics ));
     }
 
     List<NewTopic> newTopicList = streamSupplier.get().map(topicConfiguration -> {
