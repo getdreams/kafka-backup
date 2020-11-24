@@ -9,6 +9,7 @@ import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,10 +86,47 @@ public class RestoreMessageService {
                 <= MessageRestorationStatus.RUNNING.ordinal());
   }
 
-  private Map<MessageRestorationStatus, List<PartitionMessageWriterWorker>> partitionMessageWriterWorkersInfo() {
-    return partitionWriters.values()
+  private String partitionMessageWriterWorkersInfo() {
+    Map<MessageRestorationStatus, List<PartitionMessageWriterWorker>> workersMap = partitionWriters.values()
         .stream()
         .collect(groupingBy(worker -> worker.getTopicPartitionToRestore().getMessageRestorationStatus()));
+
+    List<PartitionMessageWriterWorker> succeededWorkers = workersMap.getOrDefault(MessageRestorationStatus.SUCCESS,
+        Collections.emptyList());
+    List<PartitionMessageWriterWorker> runningWorkers = workersMap.getOrDefault(MessageRestorationStatus.RUNNING,
+        Collections.emptyList());
+    List<PartitionMessageWriterWorker> waitingWorkers = workersMap.getOrDefault(MessageRestorationStatus.WAITING,
+        Collections.emptyList());
+    List<PartitionMessageWriterWorker> errorWorkers = workersMap.getOrDefault(MessageRestorationStatus.ERROR,
+        Collections.emptyList());
+
+      final StringBuilder infoBuilder = new StringBuilder();
+          infoBuilder.append(String.format("Workers count:\nALL=%d\nSUCCESS=%d\nRUNNING=%d\nWAITING=%d\nERROR=%d",
+          partitionWriters.values().size(),
+          succeededWorkers.size(),
+          runningWorkers.size(),
+          waitingWorkers.size(),
+          errorWorkers.size()));
+
+      if (runningWorkers.size() > 0) {
+        infoBuilder.append("\nRunning workers:");
+        runningWorkers.forEach(worker -> {
+          final TopicPartitionToRestore topicPartitionToRestore = worker.getTopicPartitionToRestore();
+          infoBuilder.append(String.format("\nWorker{Id:%s, Topic:%s, Partition: %s}", worker.getIdentifier(), topicPartitionToRestore.topicConfiguration.getTopicName(),
+              topicPartitionToRestore.getPartitionNumber()));
+        });
+      }
+
+    if (errorWorkers.size() > 0) {
+      infoBuilder.append("Error workers:");
+      errorWorkers.forEach(worker -> {
+        final TopicPartitionToRestore topicPartitionToRestore = worker.getTopicPartitionToRestore();
+        infoBuilder.append(String.format("\nWorker{Id:%s, Topic:%s, Partition: %s}", worker.getIdentifier(), topicPartitionToRestore.topicConfiguration.getTopicName(),
+            topicPartitionToRestore.getPartitionNumber()));
+      });
+    }
+
+      return infoBuilder.toString();
   }
 
   private List<TopicPartitionToRestore> getPartitionsToRestore(TopicsConfig config, List<String> topicsToRestore) {

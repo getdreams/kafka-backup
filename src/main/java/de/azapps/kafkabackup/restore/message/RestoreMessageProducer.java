@@ -30,9 +30,8 @@ public class RestoreMessageProducer {
     this.restoreArgsWrapper = restoreArgsWrapper;
     this.topicPartitionToRestore = topicPartitionToRestore;
 
-    initiateProducer(topicPartitionToRestore, restoreArgsWrapper);
   }
-  private void initiateProducer(TopicPartitionToRestore topicPartitionToRestore,
+  public void initiateProducer(TopicPartitionToRestore topicPartitionToRestore,
       RestoreArgsWrapper restoreArgsWrapper) {
     if (!restoreArgsWrapper.isDryRun()) {
       Properties props = new Properties();
@@ -43,6 +42,7 @@ public class RestoreMessageProducer {
       props.put("buffer.memory", 33554432);
       props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
       props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+      props.putAll(restoreArgsWrapper.saslConfig());
 
       props.put("transactional.id", "restore-transactional-id" + topicPartitionToRestore.getTopicPartitionId());
       props.putAll(restoreArgsWrapper.saslConfig());
@@ -52,11 +52,11 @@ public class RestoreMessageProducer {
     else {
       dryRunOffset = 0L;
     }
+    log.info("Producer initiated.");
   }
 
   public void produceRecords(List<Record> recordsToProduce) {
     try {
-
       List<List<Record>> partitionedRecords = Lists.partition(recordsToProduce, PRODUCER_BATCH_SIZE);
 
       for (List<Record> batch : partitionedRecords) {
