@@ -195,6 +195,7 @@ class RestoreTopicServiceTest {
         () -> sut.restoreTopics(restoreArgsWrapper));
 
     // then
-    assertEquals(runtimeException.getMessage(), "Some of the topics from configuration already exists");
+    assertEquals(runtimeException.getMessage(),
+        "Some of the topics from configuration already exists. Existing topics: [topic1]");
   }
 }
