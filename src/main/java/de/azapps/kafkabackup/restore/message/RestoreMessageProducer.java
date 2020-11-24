@@ -30,13 +30,11 @@ public class RestoreMessageProducer {
     this.restoreArgsWrapper = restoreArgsWrapper;
     this.topicPartitionToRestore = topicPartitionToRestore;
 
-    initiateProducer(topicPartitionToRestore, restoreArgsWrapper);
   }
-  private void initiateProducer(TopicPartitionToRestore topicPartitionToRestore,
+  public void initiateProducer(TopicPartitionToRestore topicPartitionToRestore,
       RestoreArgsWrapper restoreArgsWrapper) {
     if (!restoreArgsWrapper.isDryRun()) {
       Properties props = new Properties();
-      props.put("bootstrap.servers", restoreArgsWrapper.getKafkaBootstrapServers());
       props.put("acks", "all");
       props.put("retries", 1);
       props.put("batch.size", PRODUCER_BATCH_SIZE);
@@ -44,6 +42,7 @@ public class RestoreMessageProducer {
       props.put("buffer.memory", 33554432);
       props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
       props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+      props.putAll(restoreArgsWrapper.adminConfig());
 
       props.put("transactional.id", "restore-transactional-id" + topicPartitionToRestore.getTopicPartitionId());
       this.kafkaProducer = new KafkaProducer<>(props);
@@ -52,11 +51,11 @@ public class RestoreMessageProducer {
     else {
       dryRunOffset = 0L;
     }
+    log.info("Producer initiated.");
   }
 
   public void produceRecords(List<Record> recordsToProduce) {
     try {
-
       List<List<Record>> partitionedRecords = Lists.partition(recordsToProduce, PRODUCER_BATCH_SIZE);
 
       for (List<Record> batch : partitionedRecords) {

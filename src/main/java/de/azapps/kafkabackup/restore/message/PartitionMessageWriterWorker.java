@@ -44,6 +44,8 @@ public class PartitionMessageWriterWorker implements Runnable {
 
       log.debug("Got {} files to restore.", filesToRestore.size());
 
+      restoreMessageProducer.initiateProducer(topicPartitionToRestore, restoreArgsWrapper);
+
       filesToRestore.forEach(this::restoreBackupFile);
 
       topicPartitionToRestore.setMessageRestorationStatus(MessageRestorationStatus.SUCCESS);
