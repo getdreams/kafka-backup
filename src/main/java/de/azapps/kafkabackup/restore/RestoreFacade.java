@@ -1,19 +1,26 @@
 package de.azapps.kafkabackup.restore;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.common.RestoreMode;
 import de.azapps.kafkabackup.restore.message.RestoreMessageS3Service;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService;
+import de.azapps.kafkabackup.restore.message.RestoreMessageService.RestoredMessageInfo;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
 import de.azapps.kafkabackup.restore.offset.RestoreOffsetService;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
+import sun.jvm.hotspot.oops.OopUtilities;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -63,21 +70,39 @@ public class RestoreFacade {
           .restoreMessages(restoreArgsWrapper);
     }
 
-    saveOffsetMaps(topicPartitionToRestore);
+    if (shouldUseFileForOffsetMap(restoreArgsWrapper)) {
+      saveOffsetMaps(restoreArgsWrapper.getOffsetMapFileName(), topicPartitionToRestore);
+    }
 
     if (restoreArgsWrapper.getRestoreMode().contains(RestoreMode.OFFSETS)) {
-      restoreOffsetMaps(restoreArgsWrapper.getOffsetFileName(), topicPartitionToRestore);
+      if (shouldUseFileForOffsetMap(restoreArgsWrapper)) {
+        restoreOffsetMaps(restoreArgsWrapper.getOffsetMapFileName(), topicPartitionToRestore);
+      }
 
       restoreOffsetService.restoreOffsets(topicPartitionToRestore, restoreArgsWrapper.isDryRun());
     }
   }
 
-  private void saveOffsetMaps(List<TopicPartitionToRestore> topicPartitionToRestore) {
+  private boolean shouldUseFileForOffsetMap(RestoreArgsWrapper restoreArgsWrapper) {
+    return restoreArgsWrapper.getOffsetMapFileName() != null && !restoreArgsWrapper.getOffsetMapFileName().isEmpty();
+  }
 
+  private void saveOffsetMaps(String filePath, List<TopicPartitionToRestore> topicPartitionToRestore) {
+    Map<String, Map<Long, RestoredMessageInfo>> allOffsetMaps = new HashMap<>();
+
+    topicPartitionToRestore.forEach(tp -> allOffsetMaps.put(tp.getTopicPartitionId(), tp.getRestoredMessageInfoMap()));
+
+    ObjectMapper mapper = new ObjectMapper();
+    try {
+      mapper.writerWithDefaultPrettyPrinter().writeValue(Paths.get(filePath).toFile(), allOffsetMaps);
+    } catch (IOException e) {
+      log.error("Could not write offset map to file {}", filePath, e);
+      throw new RuntimeException(e);
+    }
   }
 
   private void restoreOffsetMaps(String fileName, List<TopicPartitionToRestore> topicPartitionsToRestore) {
-    List<Map<>>
+   // TODO read
 
     topicPartitionsToRestore.forEach(
         topicPartitionToRestore ->

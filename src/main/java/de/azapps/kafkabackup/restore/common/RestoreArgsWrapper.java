@@ -46,6 +46,7 @@ public class RestoreArgsWrapper {
   public static final String RESTORE_TOPIC_DENY_LIST = "restore.topicsDenyList";
   public static final String RESTORE_TIME = "restore.time";
   public static final String RESTORE_HASH = "restore.hash";
+  public static final String RESTORE_OFFSET_MAP_FILE_NAME = "restore.offsets.map.fileName";
 
   public static final String ALL_TOPICS_REGEX = ".*";
   public static final String NONE_TOPICS_REGEX = "$^";
@@ -67,7 +68,7 @@ public class RestoreArgsWrapper {
   private final boolean isDryRun;
   private final List<RestoreMode> restoreMode;
   private final int restoreMessagesMaxThreads;
-  private final String offsetFileName;
+  private final String offsetMapFileName;
 
   public static final List<RestoreArg> args = List.of(
       param(singleParam(AWS_S3_REGION).isRequired(true)),
@@ -111,6 +112,8 @@ public class RestoreArgsWrapper {
 
     builder.timeToRestore(getRestoreTime(properties));
     builder.restoreMessagesMaxThreads(parseInt(properties.getProperty(RESTORE_MESSAGES_MAX_THREADS, "1")));
+
+    builder.offsetMapFileName(properties.getProperty(RESTORE_OFFSET_MAP_FILE_NAME));
 
     return builder.build();
 }
