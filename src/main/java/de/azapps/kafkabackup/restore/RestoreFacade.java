@@ -1,26 +1,19 @@
 package de.azapps.kafkabackup.restore;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
+import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
+import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper.TopicPartitionToRestore;
 import de.azapps.kafkabackup.restore.common.RestoreMode;
 import de.azapps.kafkabackup.restore.message.RestoreMessageS3Service;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService;
-import de.azapps.kafkabackup.restore.message.RestoreMessageService.RestoredMessageInfo;
-import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
 import de.azapps.kafkabackup.restore.offset.RestoreOffsetService;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.AdminClient;
-import sun.jvm.hotspot.oops.OopUtilities;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -30,8 +23,10 @@ public class RestoreFacade {
   private final RestoreMessageService restoreMessageService;
   private final RestoreTopicService restoreTopicService;
   private final RestoreOffsetService restoreOffsetService;
+  private final RestoreConfigurationHelper restoreConfigurationHelper;
 
   private static RestoreFacade initializedFacade;
+  private final OffsetMaoFileService offsetMaoFileService = new OffsetMaoFileService();
 
   public static RestoreFacade initialize(RestoreArgsWrapper restoreArgsWrapper) {
     if (initializedFacade == null) {
@@ -45,15 +40,17 @@ public class RestoreFacade {
 
       RestoreMessageS3Service restoreMessageS3Service = new RestoreMessageS3Service(awsS3Service,
           restoreArgsWrapper.getMessageBackupBucket());
-      final RestoreMessageService restoreMessageService = new RestoreMessageService(awsS3Service, adminClientService,
-          restoreArgsWrapper.getRestoreMessagesMaxThreads(), restoreMessageS3Service);
+      final RestoreMessageService restoreMessageService = new RestoreMessageService(restoreArgsWrapper.getRestoreMessagesMaxThreads(), restoreMessageS3Service);
       final RestoreTopicService restoreTopicService = new RestoreTopicService(adminClientService, awsS3Service);
       final RestoreOffsetService restoreOffsetService = new RestoreOffsetService(awsS3Service,
           restoreArgsWrapper.getOffsetBackupBucket(), restoreArgsWrapper);
 
-      RestoreFacade restoreFacade = new RestoreFacade(restoreMessageService, restoreTopicService, restoreOffsetService);
+      final RestoreConfigurationHelper restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service,
+          adminClientService);
+      RestoreFacade restoreFacade = new RestoreFacade(restoreMessageService, restoreTopicService, restoreOffsetService,
+          restoreConfigurationHelper);
       initializedFacade = restoreFacade;
-      
+
       return restoreFacade;
     }
 
@@ -64,50 +61,24 @@ public class RestoreFacade {
     if (restoreArgsWrapper.getRestoreMode().contains(RestoreMode.TOPICS)) {
       restoreTopicService.restoreTopics(restoreArgsWrapper);
     }
-    List<TopicPartitionToRestore> topicPartitionToRestore = Collections.emptyList();
+    Map<String, TopicPartitionToRestore> partitionsToRestore =  restoreConfigurationHelper.getPartitionsToRestore(restoreArgsWrapper);
+
     if (restoreArgsWrapper.getRestoreMode().contains(RestoreMode.MESSAGES)) {
-      topicPartitionToRestore = restoreMessageService
-          .restoreMessages(restoreArgsWrapper);
+      partitionsToRestore = restoreMessageService
+          .restoreMessages(restoreArgsWrapper, partitionsToRestore);
+
+      if (offsetMaoFileService.shouldUseFileForOffsetMap(restoreArgsWrapper)) {
+        offsetMaoFileService.saveOffsetMaps(restoreArgsWrapper.getOffsetMapFileName(), partitionsToRestore);
+      }
     }
 
-    if (shouldUseFileForOffsetMap(restoreArgsWrapper)) {
-      saveOffsetMaps(restoreArgsWrapper.getOffsetMapFileName(), topicPartitionToRestore);
-    }
 
     if (restoreArgsWrapper.getRestoreMode().contains(RestoreMode.OFFSETS)) {
-      if (shouldUseFileForOffsetMap(restoreArgsWrapper)) {
-        restoreOffsetMaps(restoreArgsWrapper.getOffsetMapFileName(), topicPartitionToRestore);
+      if (offsetMaoFileService.shouldUseFileForOffsetMap(restoreArgsWrapper)) {
+        offsetMaoFileService.restoreOffsetMaps(restoreArgsWrapper.getOffsetMapFileName(), partitionsToRestore);
       }
 
-      restoreOffsetService.restoreOffsets(topicPartitionToRestore, restoreArgsWrapper.isDryRun());
+      restoreOffsetService.restoreOffsets(partitionsToRestore, restoreArgsWrapper.isDryRun());
     }
   }
-
-  private boolean shouldUseFileForOffsetMap(RestoreArgsWrapper restoreArgsWrapper) {
-    return restoreArgsWrapper.getOffsetMapFileName() != null && !restoreArgsWrapper.getOffsetMapFileName().isEmpty();
-  }
-
-  private void saveOffsetMaps(String filePath, List<TopicPartitionToRestore> topicPartitionToRestore) {
-    Map<String, Map<Long, RestoredMessageInfo>> allOffsetMaps = new HashMap<>();
-
-    topicPartitionToRestore.forEach(tp -> allOffsetMaps.put(tp.getTopicPartitionId(), tp.getRestoredMessageInfoMap()));
-
-    ObjectMapper mapper = new ObjectMapper();
-    try {
-      mapper.writerWithDefaultPrettyPrinter().writeValue(Paths.get(filePath).toFile(), allOffsetMaps);
-    } catch (IOException e) {
-      log.error("Could not write offset map to file {}", filePath, e);
-      throw new RuntimeException(e);
-    }
-  }
-
-  private void restoreOffsetMaps(String fileName, List<TopicPartitionToRestore> topicPartitionsToRestore) {
-   // TODO read
-
-    topicPartitionsToRestore.forEach(
-        topicPartitionToRestore ->
-            topicPartitionToRestore.setRestoredMessageInfoMap()
-    );
-  }
-
 }
