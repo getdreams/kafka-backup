@@ -101,12 +101,12 @@ public class RestoreMessageProducer {
           producerRecord.topic(),
           producerRecord.partition(),
           dryRunOffset);
-      topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), record.key(), dryRunOffset);
+      topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), dryRunOffset);
       dryRunOffset+=2;
       return null;
     }
     else {
-      topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), record.key(), null);
+      topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), null);
       return kafkaProducer.send(producerRecord);
     }
   }
@@ -138,7 +138,7 @@ public class RestoreMessageProducer {
       }
       else {
         RecordMetadata recordMetadata = recordFuturePair.getValue1().get();
-        topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), record.key(), recordMetadata.offset());
+        topicPartitionToRestore.addRestoredMessageInfo(record.kafkaOffset(), recordMetadata.offset());
       }
     }
   }

@@ -4,7 +4,6 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
-import de.azapps.kafkabackup.restore.message.RestoreMessageService.RestoredMessageInfo;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.Collections;
@@ -45,7 +44,7 @@ public class RestoreOffsetService {
           partitionToRestore.getPartitionNumber());
 
       oldCGOffsets.forEach((cg, oldOffset) -> {
-        Map<Long, RestoredMessageInfo> offsetMap = partitionToRestore.getRestoredMessageInfoMap();
+        Map<Long, Long> offsetMap = partitionToRestore.getRestoredMessageInfoMap();
         long maxOriginalOffset = partitionToRestore.getMaxOriginalOffset();
         // Map old offset to new offset
         try {
@@ -90,14 +89,14 @@ public class RestoreOffsetService {
     });
   }
 
-  private Long getNewOffset(Map<Long, RestoredMessageInfo> offsetMap, long maxOriginalOffset, long oldOffset) {
+  private Long getNewOffset(Map<Long, Long> offsetMap, long maxOriginalOffset, long oldOffset) {
     if (offsetMap.containsKey(oldOffset)) {
-      return offsetMap.get(oldOffset).getNewOffset();
+      return offsetMap.get(oldOffset);
     } else {
       // The high watermark will not match a restored message, so we need to find the *new* high watermark
       if (oldOffset > maxOriginalOffset) {
         if (offsetMap.containsKey(maxOriginalOffset)) {
-          return offsetMap.get(maxOriginalOffset).getNewOffset() + 1;
+          return offsetMap.get(maxOriginalOffset) + 1;
         } else {
           throw new RuntimeException(
               "Could not find mapped offset in restored cluster, and could not map to a new high watermark either");
