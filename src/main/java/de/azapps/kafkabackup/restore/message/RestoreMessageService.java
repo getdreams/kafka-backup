@@ -18,7 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -171,7 +170,7 @@ public class RestoreMessageService {
     final TopicConfiguration topicConfiguration;
     final int partitionNumber;
     private MessageRestorationStatus messageRestorationStatus;
-    private Map<Long, RestoredMessageInfo> restoredMessageInfoMap;
+    private Map<Long, Long> restoredMessageInfoMap;
     private long maxOriginalOffset = -1L;
 
     public TopicPartitionToRestore(TopicConfiguration topicConfiguration, int partitionNumber) {
@@ -188,14 +187,8 @@ public class RestoreMessageService {
     }
 
     public void addRestoredMessageInfo(long originalOffset, Long newOffset) {
-      restoredMessageInfoMap.put(originalOffset, new RestoredMessageInfo(originalOffset, newOffset));
+      restoredMessageInfoMap.put(originalOffset,newOffset);
       maxOriginalOffset = Math.max(maxOriginalOffset, originalOffset);
     }
-  }
-
-  @Data
-  public static class RestoredMessageInfo {
-    private final long originalOffset;
-    private final Long newOffset;
   }
 }
