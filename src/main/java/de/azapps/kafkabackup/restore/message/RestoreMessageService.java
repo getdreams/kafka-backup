@@ -9,6 +9,7 @@ import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,6 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -85,10 +85,47 @@ public class RestoreMessageService {
                 <= MessageRestorationStatus.RUNNING.ordinal());
   }
 
-  private Map<MessageRestorationStatus, List<PartitionMessageWriterWorker>> partitionMessageWriterWorkersInfo() {
-    return partitionWriters.values()
+  private String partitionMessageWriterWorkersInfo() {
+    Map<MessageRestorationStatus, List<PartitionMessageWriterWorker>> workersMap = partitionWriters.values()
         .stream()
         .collect(groupingBy(worker -> worker.getTopicPartitionToRestore().getMessageRestorationStatus()));
+
+    List<PartitionMessageWriterWorker> succeededWorkers = workersMap.getOrDefault(MessageRestorationStatus.SUCCESS,
+        Collections.emptyList());
+    List<PartitionMessageWriterWorker> runningWorkers = workersMap.getOrDefault(MessageRestorationStatus.RUNNING,
+        Collections.emptyList());
+    List<PartitionMessageWriterWorker> waitingWorkers = workersMap.getOrDefault(MessageRestorationStatus.WAITING,
+        Collections.emptyList());
+    List<PartitionMessageWriterWorker> errorWorkers = workersMap.getOrDefault(MessageRestorationStatus.ERROR,
+        Collections.emptyList());
+
+      final StringBuilder infoBuilder = new StringBuilder();
+          infoBuilder.append(String.format("Workers count:\nALL=%d\nSUCCESS=%d\nRUNNING=%d\nWAITING=%d\nERROR=%d",
+          partitionWriters.values().size(),
+          succeededWorkers.size(),
+          runningWorkers.size(),
+          waitingWorkers.size(),
+          errorWorkers.size()));
+
+      if (runningWorkers.size() > 0) {
+        infoBuilder.append("\nRunning workers:");
+        runningWorkers.forEach(worker -> {
+          final TopicPartitionToRestore topicPartitionToRestore = worker.getTopicPartitionToRestore();
+          infoBuilder.append(String.format("\nWorker{Id:%s, Topic:%s, Partition: %s}", worker.getIdentifier(), topicPartitionToRestore.topicConfiguration.getTopicName(),
+              topicPartitionToRestore.getPartitionNumber()));
+        });
+      }
+
+    if (errorWorkers.size() > 0) {
+      infoBuilder.append("Error workers:");
+      errorWorkers.forEach(worker -> {
+        final TopicPartitionToRestore topicPartitionToRestore = worker.getTopicPartitionToRestore();
+        infoBuilder.append(String.format("\nWorker{Id:%s, Topic:%s, Partition: %s}", worker.getIdentifier(), topicPartitionToRestore.topicConfiguration.getTopicName(),
+            topicPartitionToRestore.getPartitionNumber()));
+      });
+    }
+
+      return infoBuilder.toString();
   }
 
   private List<TopicPartitionToRestore> getPartitionsToRestore(TopicsConfig config, List<String> topicsToRestore) {
@@ -133,30 +170,25 @@ public class RestoreMessageService {
     final TopicConfiguration topicConfiguration;
     final int partitionNumber;
     private MessageRestorationStatus messageRestorationStatus;
-    private Map<Long, RestoredMessageInfo> restoredMessageInfoMap;
-    private long maxOriginalOffset = 0L;
+    private Map<Long, Long> restoredMessageInfoMap;
+    private long maxOriginalOffset = -1L;
 
     public TopicPartitionToRestore(TopicConfiguration topicConfiguration, int partitionNumber) {
       this.topicConfiguration = topicConfiguration;
       this.partitionNumber = partitionNumber;
       this.messageRestorationStatus = MessageRestorationStatus.WAITING;
       this.restoredMessageInfoMap = new HashMap<>();
+      // Start out by always mapping offset 0 to offset 0 (for empty topics)
+      addRestoredMessageInfo(0L, 0L);
     }
 
     public String getTopicPartitionId() {
       return topicConfiguration.getTopicName() + "." + partitionNumber;
     }
 
-    public void addRestoredMessageInfo(long originalOffset, byte[] key, Long newOffset) {
-      restoredMessageInfoMap.put(originalOffset, new RestoredMessageInfo(originalOffset, key, newOffset));
+    public void addRestoredMessageInfo(long originalOffset, Long newOffset) {
+      restoredMessageInfoMap.put(originalOffset,newOffset);
       maxOriginalOffset = Math.max(maxOriginalOffset, originalOffset);
     }
-  }
-
-  @Data
-  public static class RestoredMessageInfo {
-    private final long originalOffset;
-    private final byte[] key;
-    private final Long newOffset;
   }
 }
