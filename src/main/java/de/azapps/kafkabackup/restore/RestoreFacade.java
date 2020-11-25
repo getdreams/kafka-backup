@@ -26,7 +26,7 @@ public class RestoreFacade {
   private final RestoreConfigurationHelper restoreConfigurationHelper;
 
   private static RestoreFacade initializedFacade;
-  private final OffsetMaoFileService offsetMaoFileService = new OffsetMaoFileService();
+  private final OffsetMapFileService offsetMaoFileService = new OffsetMapFileService();
 
   public static RestoreFacade initialize(RestoreArgsWrapper restoreArgsWrapper) {
     if (initializedFacade == null) {
