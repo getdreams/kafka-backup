@@ -98,7 +98,6 @@ public class RestoreOffsetService {
     });
   }
 
-
   private Map<String, Long> getOffsetBackups(String topic, int partition) {
     try {
       final String prefix = String.format("%s/%03d/", topic, partition);

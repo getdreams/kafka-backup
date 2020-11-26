@@ -26,7 +26,7 @@ public class RestoreFacade {
   private final RestoreConfigurationHelper restoreConfigurationHelper;
 
   private static RestoreFacade initializedFacade;
-  private final OffsetMapFileService offsetMaoFileService = new OffsetMapFileService();
+  private final OffsetMapFileService offsetMapFileService = new OffsetMapFileService();
 
   public static RestoreFacade initialize(RestoreArgsWrapper restoreArgsWrapper) {
     if (initializedFacade == null) {
@@ -67,15 +67,15 @@ public class RestoreFacade {
       partitionsToRestore = restoreMessageService
           .restoreMessages(restoreArgsWrapper, partitionsToRestore);
 
-      if (offsetMaoFileService.shouldUseFileForOffsetMap(restoreArgsWrapper)) {
-        offsetMaoFileService.saveOffsetMaps(restoreArgsWrapper.getOffsetMapFileName(), partitionsToRestore);
+      if (offsetMapFileService.shouldUseFileForOffsetMap(restoreArgsWrapper)) {
+        offsetMapFileService.saveOffsetMaps(restoreArgsWrapper.getOffsetMapFileName(), partitionsToRestore);
       }
     }
 
 
     if (restoreArgsWrapper.getRestoreMode().contains(RestoreMode.OFFSETS)) {
-      if (offsetMaoFileService.shouldUseFileForOffsetMap(restoreArgsWrapper)) {
-        offsetMaoFileService.restoreOffsetMaps(restoreArgsWrapper.getOffsetMapFileName(), partitionsToRestore);
+      if (offsetMapFileService.shouldUseFileForOffsetMap(restoreArgsWrapper)) {
+        offsetMapFileService.restoreOffsetMaps(restoreArgsWrapper.getOffsetMapFileName(), partitionsToRestore);
       }
 
       restoreOffsetService.restoreOffsets(partitionsToRestore, restoreArgsWrapper.isDryRun());

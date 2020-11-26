@@ -54,7 +54,21 @@ class OffsetMapperTest {
             expectedNewOffset(0)),
 
         singleTestCase(
-            "Exception when map not contains max original offset",
+            "old committed offset higher then max restored offset",
+            offsetMap(entry(0,0), entry(2,2)),
+            oldOffset(10),
+            expectedNewOffset(3)),
+
+        singleTestCase(
+            "map does not match max restored offset but old offset mapped",
+            offsetMap(entry(0,0), entry(1,2)),
+            maxOriginalOffset(5),
+            oldOffset(1),
+            expectedNewOffset(2),
+            null),
+
+        singleTestCase(
+            "exception when map not contains max original offset",
             offsetMap(entry(0,0), entry(1,2)),
             maxOriginalOffset(5),
             oldOffset(4),
@@ -63,7 +77,7 @@ class OffsetMapperTest {
     );
   }
 
-  @ParameterizedTest(name = "{0} EXPECTED NEW OFFSET: {4} - when offsetMapping: {1}, maxOriginalOffset: {2}, oldOffset: {3}")
+  @ParameterizedTest
   @MethodSource("provideTestCases")
   public <T extends Throwable> void shouldReturnNewOffset(String description, Map<Long, Long> offsetMap,
       Long maxOriginalOffset, Long oldOffset, Long expectedNewOffset, Class<T> expectedError) {
@@ -71,7 +85,7 @@ class OffsetMapperTest {
 
     // when/then
     if (expectedError != null) {
-      assertThrows(expectedError, () -> sut.getNewOffset(offsetMap, maxOriginalOffset, oldOffset));
+      assertThrows(expectedError, () -> sut.getNewOffset(offsetMap, maxOriginalOffset, oldOffset), "When testing: " + description);
     }
     else {
       Long newOffsetResult = sut.getNewOffset(offsetMap, maxOriginalOffset, oldOffset);
