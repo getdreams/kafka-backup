@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.restore.common.KafkaConsumerFactory;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
-import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper.TopicPartitionToRestore;
+import de.azapps.kafkabackup.restore.message.TopicPartitionToRestore;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.Collections;
 import java.util.Comparator;
