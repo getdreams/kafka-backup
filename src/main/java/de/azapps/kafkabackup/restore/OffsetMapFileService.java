@@ -61,7 +61,7 @@ public class OffsetMapFileService {
       }
 
     } catch (IOException e) {
-      log.error("Could not read offset map to file {}", fileName, e);
+      log.error("Could not read offset map from file {}", fileName, e);
       throw new RuntimeException(e);
     }
   }
