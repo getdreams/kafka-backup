@@ -93,8 +93,6 @@ public class RestoreConfigurationHelper {
       this.partitionNumber = partitionNumber;
       this.messageRestorationStatus = MessageRestorationStatus.WAITING;
       this.restoredMessageInfoMap = new HashMap<>();
-      // Start out by always mapping offset 0 to offset 0 (for empty topics)
-      addRestoredMessageInfo(0L, 0L);
     }
 
     public String getTopicPartitionId() {

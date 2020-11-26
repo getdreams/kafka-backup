@@ -92,8 +92,11 @@ public class RestoreOffsetService {
     if (offsetMap.containsKey(oldOffset)) {
       return offsetMap.get(oldOffset);
     } else {
-      // The high watermark will not match a restored message, so we need to find the *new* high watermark
-      if (oldOffset > maxOriginalOffset) {
+      if (oldOffset <= 0) {
+        // Its always safe to map 0 -> 0, and needed for empty topics with commits to 0.
+        return 0L;
+      } else if (oldOffset > maxOriginalOffset) {
+        // The high watermark will not match a restored message, so we need to find the *new* high watermark
         if (offsetMap.containsKey(maxOriginalOffset)) {
           return offsetMap.get(maxOriginalOffset) + 1;
         } else {
