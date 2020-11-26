@@ -11,7 +11,6 @@ import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.record.Record;
 import de.azapps.kafkabackup.helpers.TestRecordFactory;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
-import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;

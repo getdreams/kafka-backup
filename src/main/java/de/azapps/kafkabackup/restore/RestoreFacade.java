@@ -5,7 +5,7 @@ import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.common.RestoreMode;
 import de.azapps.kafkabackup.restore.message.RestoreMessageS3Service;
 import de.azapps.kafkabackup.restore.message.RestoreMessageService;
-import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
+import de.azapps.kafkabackup.restore.message.TopicPartitionToRestore;
 import de.azapps.kafkabackup.restore.offset.RestoreOffsetService;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;

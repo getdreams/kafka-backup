@@ -5,7 +5,6 @@ import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.record.Record;
 import de.azapps.kafkabackup.helpers.TestRecordFactory;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
-import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;

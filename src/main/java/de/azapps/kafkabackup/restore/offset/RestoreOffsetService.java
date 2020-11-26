@@ -3,8 +3,9 @@ package de.azapps.kafkabackup.restore.offset;
 import com.amazonaws.services.s3.model.S3Object;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.azapps.kafkabackup.restore.common.KafkaConsumerFactory;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
-import de.azapps.kafkabackup.restore.message.RestoreMessageService.TopicPartitionToRestore;
+import de.azapps.kafkabackup.restore.message.TopicPartitionToRestore;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,6 +29,15 @@ public class RestoreOffsetService {
   private final AwsS3Service awsS3Service;
   private final String bucketName;
   private final RestoreArgsWrapper restoreArgsWrapper;
+  private final OffsetMapper offsetMapper;
+
+  public RestoreOffsetService(AwsS3Service awsS3Service, String bucketName,
+      RestoreArgsWrapper restoreArgsWrapper) {
+    this.awsS3Service = awsS3Service;
+    this.bucketName = bucketName;
+    this.restoreArgsWrapper = restoreArgsWrapper;
+    this.offsetMapper = new OffsetMapper();
+  }
 
   public void restoreOffsets(List<TopicPartitionToRestore> partitionsToRestore, boolean isDryRun) {
     log.info("Restoring offsets. Dry run mode: {}", isDryRun);
@@ -48,7 +58,7 @@ public class RestoreOffsetService {
         long maxOriginalOffset = partitionToRestore.getMaxOriginalOffset();
         // Map old offset to new offset
         try {
-          long newOffset = getNewOffset(offsetMap, maxOriginalOffset, oldOffset);
+          long newOffset = offsetMapper.getNewOffset(offsetMap, maxOriginalOffset, oldOffset);
 
           Map<TopicPartition, OffsetAndMetadata> tps = Optional.ofNullable(newCGTopicPartitionOffsets.get(cg))
               .orElse(new HashMap<>());
@@ -81,7 +91,8 @@ public class RestoreOffsetService {
         groupConsumerConfig.put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer");
         groupConsumerConfig.putAll(restoreArgsWrapper.saslConfig());
 
-        Consumer<byte[], byte[]> consumer = new KafkaConsumer<>(groupConsumerConfig);
+        KafkaConsumer<byte[], byte[]> consumer = KafkaConsumerFactory.getFactory()
+            .createConsumer(byte[].class, byte[].class, groupConsumerConfig);
         consumer.assign(topicPartitions);
         consumer.commitSync(cgOffsets);
         consumer.close();
@@ -89,23 +100,6 @@ public class RestoreOffsetService {
     });
   }
 
-  private Long getNewOffset(Map<Long, Long> offsetMap, long maxOriginalOffset, long oldOffset) {
-    if (offsetMap.containsKey(oldOffset)) {
-      return offsetMap.get(oldOffset);
-    } else {
-      // The high watermark will not match a restored message, so we need to find the *new* high watermark
-      if (oldOffset > maxOriginalOffset) {
-        if (offsetMap.containsKey(maxOriginalOffset)) {
-          return offsetMap.get(maxOriginalOffset) + 1;
-        } else {
-          throw new RuntimeException(
-              "Could not find mapped offset in restored cluster, and could not map to a new high watermark either");
-        }
-      } else {
-        return getNewOffset(offsetMap, maxOriginalOffset, oldOffset + 1);
-      }
-    }
-  }
 
   private Map<String, Long> getOffsetBackups(String topic, int partition) {
     try {

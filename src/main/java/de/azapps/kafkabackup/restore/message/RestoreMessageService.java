@@ -162,33 +162,4 @@ public class RestoreMessageService {
     }
     return topicPartitions.stream();
   }
-
-  @Getter
-  @Setter
-  public static class TopicPartitionToRestore {
-
-    final TopicConfiguration topicConfiguration;
-    final int partitionNumber;
-    private MessageRestorationStatus messageRestorationStatus;
-    private Map<Long, Long> restoredMessageInfoMap;
-    private long maxOriginalOffset = -1L;
-
-    public TopicPartitionToRestore(TopicConfiguration topicConfiguration, int partitionNumber) {
-      this.topicConfiguration = topicConfiguration;
-      this.partitionNumber = partitionNumber;
-      this.messageRestorationStatus = MessageRestorationStatus.WAITING;
-      this.restoredMessageInfoMap = new HashMap<>();
-      // Start out by always mapping offset 0 to offset 0 (for empty topics)
-      addRestoredMessageInfo(0L, 0L);
-    }
-
-    public String getTopicPartitionId() {
-      return topicConfiguration.getTopicName() + "." + partitionNumber;
-    }
-
-    public void addRestoredMessageInfo(long originalOffset, Long newOffset) {
-      restoredMessageInfoMap.put(originalOffset,newOffset);
-      maxOriginalOffset = Math.max(maxOriginalOffset, originalOffset);
-    }
-  }
 }
