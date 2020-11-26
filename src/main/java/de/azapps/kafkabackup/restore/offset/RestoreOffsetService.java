@@ -5,18 +5,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.restore.common.KafkaConsumerFactory;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
-import de.azapps.kafkabackup.restore.message.TopicPartitionToRestore;
+import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper.TopicPartitionToRestore;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -39,13 +37,13 @@ public class RestoreOffsetService {
     this.offsetMapper = new OffsetMapper();
   }
 
-  public void restoreOffsets(List<TopicPartitionToRestore> partitionsToRestore, boolean isDryRun) {
+  public void restoreOffsets(Map<String, TopicPartitionToRestore> partitionsToRestore, boolean isDryRun) {
     log.info("Restoring offsets. Dry run mode: {}", isDryRun);
 
     // consumergroup -> topicpartition -> (new) offset
     Map<String, Map<TopicPartition, OffsetAndMetadata>> newCGTopicPartitionOffsets = new HashMap<>();
 
-    partitionsToRestore.forEach(partitionToRestore -> {
+    partitionsToRestore.forEach((id, partitionToRestore) -> {
       String topic = partitionToRestore.getTopicConfiguration().getTopicName();
       int partition = partitionToRestore.getPartitionNumber();
 

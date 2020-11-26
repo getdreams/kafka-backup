@@ -27,7 +27,7 @@ public class RestoreTopicService {
     this.adminClientService = adminClientService;
     this.awsS3Service = awsS3Service;
 
-    restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service);
+    restoreConfigurationHelper = new RestoreConfigurationHelper(awsS3Service, adminClientService);
   }
 
   public static List<String> getTopicsList(RestoreArgsWrapper restoreArgsWrapper, TopicsConfig config) {
