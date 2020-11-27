@@ -77,7 +77,7 @@ class OffsetMapperTest {
     );
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "{index} {0}")
   @MethodSource("provideTestCases")
   public <T extends Throwable> void shouldReturnNewOffset(String description, Map<Long, Long> offsetMap,
       Long maxOriginalOffset, Long oldOffset, Long expectedNewOffset, Class<T> expectedError) {
