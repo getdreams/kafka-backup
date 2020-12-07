@@ -3,7 +3,6 @@ package de.azapps.kafkabackup.restore.message;
 import com.google.common.collect.Lists;
 import de.azapps.kafkabackup.common.record.Record;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
-import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper.TopicPartitionToRestore;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;

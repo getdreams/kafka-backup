@@ -5,21 +5,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
-import de.azapps.kafkabackup.restore.message.MessageRestorationStatus;
+import de.azapps.kafkabackup.restore.message.TopicPartitionToRestore;
 import de.azapps.kafkabackup.restore.topic.RestoreTopicService;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
@@ -76,32 +73,5 @@ public class RestoreConfigurationHelper {
           new TopicPartitionToRestore(topicConfiguration, i));
     }
     return topicPartitions.stream();
-  }
-
-  @Getter
-  @Setter
-  public static class TopicPartitionToRestore {
-
-    final TopicConfiguration topicConfiguration;
-    final int partitionNumber;
-    private MessageRestorationStatus messageRestorationStatus;
-    private Map<Long, Long> restoredMessageInfoMap;
-    private long maxOriginalOffset = -1L;
-
-    public TopicPartitionToRestore(TopicConfiguration topicConfiguration, int partitionNumber) {
-      this.topicConfiguration = topicConfiguration;
-      this.partitionNumber = partitionNumber;
-      this.messageRestorationStatus = MessageRestorationStatus.WAITING;
-      this.restoredMessageInfoMap = new HashMap<>();
-    }
-
-    public String getTopicPartitionId() {
-      return topicConfiguration.getTopicName() + "." + partitionNumber;
-    }
-
-    public void addRestoredMessageInfo(long originalOffset, Long newOffset) {
-      restoredMessageInfoMap.put(originalOffset,newOffset);
-      maxOriginalOffset = Math.max(maxOriginalOffset, originalOffset);
-    }
   }
 }
