@@ -95,8 +95,10 @@ public class RestoreMessageProducer {
         record.kafkaPartition(),
         record.timestamp(),
         record.key(),
-        record.value(),
-        record.headers());
+        record.value());
+
+    record.headers().forEach(connectHeader ->
+        record.headers().add(connectHeader.key(), connectHeader.value(), connectHeader.schema()));
 
     if (this.restoreArgsWrapper.isDryRun()) {
       log.info("Producing record. Original offset: {}, topic: {}, partition: {}, new offset: {}",
