@@ -91,7 +91,7 @@ public class RestoreMessageProducer {
   }
 
   private Future<RecordMetadata> produceRecord(Record record) {
-    ProducerRecord<byte[], byte[]> producerRecord = new ProducerRecord<>(record.topic(),
+    ProducerRecord<byte[], byte[]> producerRecord = new ProducerRecord(record.topic(),
         record.kafkaPartition(),
         record.timestamp(),
         record.key(),
