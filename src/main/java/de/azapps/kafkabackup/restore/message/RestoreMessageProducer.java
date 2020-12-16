@@ -36,6 +36,8 @@ public class RestoreMessageProducer {
     if (!restoreArgsWrapper.isDryRun()) {
       Properties props = new Properties();
       props.put("acks", "all");
+      props.put("max.in.flight.requests.per.connection", "1");
+      props.put("enable.idempotence", true);
       props.put("retries", 1);
       props.put("batch.size", PRODUCER_BATCH_SIZE);
       props.put("linger.ms", 1);
@@ -93,7 +95,8 @@ public class RestoreMessageProducer {
         record.kafkaPartition(),
         record.timestamp(),
         record.key(),
-        record.value());
+        record.value(),
+        record.headers());
 
     if (this.restoreArgsWrapper.isDryRun()) {
       log.info("Producing record. Original offset: {}, topic: {}, partition: {}, new offset: {}",
