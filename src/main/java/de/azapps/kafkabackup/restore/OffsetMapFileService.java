@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
-import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper.TopicPartitionToRestore;
+import de.azapps.kafkabackup.restore.message.TopicPartitionToRestore;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;

@@ -55,6 +55,8 @@ public class RestoreTopicService {
 
   private void restoreTopics(TopicsConfig config, List<String> topicsToRestore, boolean isDryRun) {
     log.info("Restoring topics. Dry run mode: {}", isDryRun);
+    log.info("Topics config ({})", config);
+    log.info("Topics to restore ({})", topicsToRestore);
     createTopics(config, topicsToRestore, isDryRun);
     log.info("All topics has been created");
   }
@@ -87,6 +89,7 @@ public class RestoreTopicService {
         .collect(Collectors.toList());
 
     if (!isDryRun) {
+      log.info("About to create topics using adminClient ({})", newTopicList);
       adminClientService.createTopics(newTopicList);
     } else {
       log.info("DryRun mode. Topics to be created: \n{}", newTopicList);
