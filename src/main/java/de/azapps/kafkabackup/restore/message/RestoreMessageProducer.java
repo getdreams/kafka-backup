@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import de.azapps.kafkabackup.common.record.Record;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
 import de.azapps.kafkabackup.restore.common.RestoreConfigurationHelper.TopicPartitionToRestore;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -98,7 +99,7 @@ public class RestoreMessageProducer {
         record.value());
 
     record.headers().forEach(connectHeader ->
-        record.headers().add(connectHeader.key(), connectHeader.value(), connectHeader.schema()));
+        producerRecord.headers().add(connectHeader.key(), (byte[])connectHeader.value()));
 
     if (this.restoreArgsWrapper.isDryRun()) {
       log.info("Producing record. Original offset: {}, topic: {}, partition: {}, new offset: {}",
