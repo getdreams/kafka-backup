@@ -8,6 +8,8 @@ import static de.azapps.kafkabackup.common.topic.TestTopicConfigHelper.VALUE_1;
 import static de.azapps.kafkabackup.common.topic.TestTopicConfigHelper.VALUE_2;
 import static de.azapps.kafkabackup.common.topic.TestTopicConfigHelper.forTestTopic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
 import java.util.List;
@@ -31,9 +33,9 @@ class TopicsConfigTest {
         .build();
 
     // when
-    String firstChecksumResult = TopicsConfig.of(List.of(configForFirstTopic, configForSecondTopic)).checksum();
+    String firstChecksumResult = TopicsConfig.of(ImmutableList.of(configForFirstTopic, configForSecondTopic)).checksum();
 
-    String secondChecksumResult = TopicsConfig.of(List.of(configForFirstTopic, configForSecondTopic)).checksum();
+    String secondChecksumResult = TopicsConfig.of(ImmutableList.of(configForFirstTopic, configForSecondTopic)).checksum();
 
     // then
     assertEquals(firstChecksumResult, secondChecksumResult);
@@ -54,10 +56,10 @@ class TopicsConfigTest {
 
     // when
     String firstChecksumResult =
-        TopicsConfig.of(List.of(configForFirstTopic, configForSecondTopic)).checksum();
+        TopicsConfig.of(ImmutableList.of(configForFirstTopic, configForSecondTopic)).checksum();
 
     String secondChecksumResult =
-        TopicsConfig.of(List.of(configForSecondTopic, configForFirstTopic)).checksum();
+        TopicsConfig.of(ImmutableList.of(configForSecondTopic, configForFirstTopic)).checksum();
 
     // then
     assertEquals(firstChecksumResult, secondChecksumResult);
@@ -82,10 +84,10 @@ class TopicsConfigTest {
 
     // when
     String firstChecksumResult =
-        TopicsConfig.of(List.of(configForFirstTopic)).checksum();
+        TopicsConfig.of(ImmutableList.of(configForFirstTopic)).checksum();
 
     String secondChecksumResult =
-        TopicsConfig.of(List.of(configForFirstTopicWithDifferentOrder)).checksum();
+        TopicsConfig.of(ImmutableList.of(configForFirstTopicWithDifferentOrder)).checksum();
 
     // then
     assertEquals(firstChecksumResult, secondChecksumResult);

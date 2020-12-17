@@ -15,8 +15,8 @@ description = "kafka-backup"
 group = 'de.azapps.kafkabackup'
 
 allprojects {
-    sourceCompatibility = 1.11
-    targetCompatibility = 1.11
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 }
 
 repositories {

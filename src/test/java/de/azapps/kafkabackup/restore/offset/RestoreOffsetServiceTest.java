@@ -11,6 +11,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.s3.model.S3Object;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.restore.common.KafkaConsumerFactory;
 import de.azapps.kafkabackup.restore.common.RestoreArgsWrapper;
@@ -38,7 +41,7 @@ class RestoreOffsetServiceTest {
   private final static RestoreArgsWrapper DEFAULT_RESTORE_ARGS = RestoreArgsWrapper.builder()
       .build();
 
-  private final static Map<String, Object> DEFAULT_CONSUMER_CONFIG = Map.of(
+  private final static Map<String, Object> DEFAULT_CONSUMER_CONFIG = ImmutableMap.of(
       "group.id", "groupId",
       "key.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer",
       "value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer"
@@ -61,7 +64,7 @@ class RestoreOffsetServiceTest {
   @Test
   public void shouldNotCommitAnyOffsetsIfDruRunIsEnabled() {
     // given
-    when(awsS3Service.getBucketObjectKeys(any(), any(), any())).thenReturn(List.of("1", "2", "3"));
+    when(awsS3Service.getBucketObjectKeys(any(), any(), any())).thenReturn(ImmutableList.of("1", "2", "3"));
     S3Object s3Object = new S3Object();
     s3Object.setObjectContent(new ByteArrayInputStream("{\"group1\":2}".getBytes()));
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
@@ -69,8 +72,8 @@ class RestoreOffsetServiceTest {
     KafkaConsumerFactory kafkaConsumerFactoryMock = Mockito.mock(KafkaConsumerFactory.class);
     KafkaConsumerFactory.setFactory(kafkaConsumerFactoryMock);
 
-    Map<String, TopicPartitionToRestore> partitionsToRestore = Map
-        .of("topicName.1", new TopicPartitionToRestore(new TopicConfiguration("topicName", 3, 1), 1));
+    Map<String, TopicPartitionToRestore> partitionsToRestore = ImmutableMap.of(
+        "topicName.1", new TopicPartitionToRestore(new TopicConfiguration("topicName", 3, 1), 1));
 
     // when
     sut.restoreOffsets(partitionsToRestore, true);
@@ -83,7 +86,7 @@ class RestoreOffsetServiceTest {
   public void shouldCommitProperOffsets() {
     // given
     when(awsS3Service.getBucketObjectKeys(eq(TEST_BUCKET_NAME), eq("topicName/001/"), eq("/")))
-        .thenReturn(List.of("1", "3", "2"));
+        .thenReturn(ImmutableList.of("1", "3", "2"));
     S3Object s3Object = new S3Object();
     s3Object.setObjectContent(new ByteArrayInputStream("{\"group1\":5}".getBytes()));
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
@@ -94,8 +97,8 @@ class RestoreOffsetServiceTest {
     KafkaConsumer kafkaConsumer = Mockito.mock(KafkaConsumer.class);
     when(kafkaConsumerFactoryMock.createConsumer(any(), any(), any())).thenReturn(kafkaConsumer);
 
-    Map<String, TopicPartitionToRestore> partitionsToRestore = Map
-        .of("topicName.1", new TopicPartitionToRestore(new TopicConfiguration("topicName", 1, 1), 1));
+    Map<String, TopicPartitionToRestore> partitionsToRestore = ImmutableMap.of(
+        "topicName.1", new TopicPartitionToRestore(new TopicConfiguration("topicName", 1, 1), 1));
 
     // when
     sut.restoreOffsets(partitionsToRestore, false);
@@ -114,7 +117,7 @@ class RestoreOffsetServiceTest {
   public void shouldCommitOffsetsForProperPartition() {
     // given
     when(awsS3Service.getBucketObjectKeys(eq(TEST_BUCKET_NAME), eq("topicName/001/"), eq("/")))
-        .thenReturn(List.of("1", "3", "2"));
+        .thenReturn(ImmutableList.of("1", "3", "2"));
     S3Object s3Object = new S3Object();
     s3Object.setObjectContent(new ByteArrayInputStream("{\"group1\":5}".getBytes()));
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
@@ -125,8 +128,8 @@ class RestoreOffsetServiceTest {
     KafkaConsumer kafkaConsumer = Mockito.mock(KafkaConsumer.class);
     when(kafkaConsumerFactoryMock.createConsumer(any(), any(), any())).thenReturn(kafkaConsumer);
 
-    Map<String, TopicPartitionToRestore> partitionsToRestore = Map
-        .of("topicName.1", new TopicPartitionToRestore(new TopicConfiguration("topicName", 1, 1), 1));
+    Map<String, TopicPartitionToRestore> partitionsToRestore = ImmutableMap.of(
+        "topicName.1", new TopicPartitionToRestore(new TopicConfiguration("topicName", 1, 1), 1));
     // when
 
     sut.restoreOffsets(partitionsToRestore, false);
@@ -143,7 +146,7 @@ class RestoreOffsetServiceTest {
   public void shouldCommitOffsetsUsingProperConsumerGroupName() {
     // given
     when(awsS3Service.getBucketObjectKeys(eq(TEST_BUCKET_NAME), eq("topicName/001/"), eq("/")))
-        .thenReturn(List.of("1", "3", "2"));
+        .thenReturn(ImmutableList.of("1", "3", "2"));
     S3Object s3Object = new S3Object();
     s3Object.setObjectContent(new ByteArrayInputStream("{\"group1\":5}".getBytes()));
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
@@ -154,8 +157,8 @@ class RestoreOffsetServiceTest {
     KafkaConsumer kafkaConsumer = Mockito.mock(KafkaConsumer.class);
     when(kafkaConsumerFactoryMock.createConsumer(any(), any(), any())).thenReturn(kafkaConsumer);
 
-    Map<String, TopicPartitionToRestore> partitionsToRestore = Map
-        .of("topicName.1", new TopicPartitionToRestore(new TopicConfiguration("topicName", 1, 1), 1));
+    Map<String, TopicPartitionToRestore> partitionsToRestore = ImmutableMap.of(
+        "topicName.1", new TopicPartitionToRestore(new TopicConfiguration("topicName", 1, 1), 1));
 
     // when
     sut.restoreOffsets(partitionsToRestore, false);
@@ -175,7 +178,7 @@ class RestoreOffsetServiceTest {
   public void shouldStopWholeRestorationProcessIfExceptionWillBeCaughtProcessingAnyConsumerGroup() {
     // given
     when(awsS3Service.getBucketObjectKeys(eq(TEST_BUCKET_NAME), eq("topicName/001/"), eq("/")))
-        .thenReturn(List.of("1", "3", "2"));
+        .thenReturn(ImmutableList.of("1", "3", "2"));
     S3Object s3Object = new S3Object();
     s3Object.setObjectContent(new ByteArrayInputStream("{\"group1\":5}".getBytes()));
     when(awsS3Service.getFile(any(), any())).thenReturn(s3Object);
@@ -184,8 +187,8 @@ class RestoreOffsetServiceTest {
     KafkaConsumerFactory kafkaConsumerFactoryMock = Mockito.mock(KafkaConsumerFactory.class);
     KafkaConsumerFactory.setFactory(kafkaConsumerFactoryMock);
 
-    Map<String, TopicPartitionToRestore> partitionsToRestore = Map
-        .of("topicName.1", new TopicPartitionToRestore(new TopicConfiguration("topicName", 1, 1), 1));
+    Map<String, TopicPartitionToRestore> partitionsToRestore = ImmutableMap.of(
+        "topicName.1", new TopicPartitionToRestore(new TopicConfiguration("topicName", 1, 1), 1));
 
     // when
     RuntimeException expectedException = assertThrows(RuntimeException.class, () -> {

@@ -7,6 +7,7 @@ import static de.azapps.kafkabackup.restore.common.RestoreMode.OFFSETS;
 import static de.azapps.kafkabackup.restore.common.RestoreMode.TOPICS;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
+import com.google.common.collect.Lists;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -70,13 +71,13 @@ public class RestoreArgsWrapper {
   private final int restoreMessagesMaxThreads;
   private final String offsetMapFileName;
 
-  public static final List<RestoreArg> args = List.of(
+  public static final List<RestoreArg> args = Arrays.asList(
       param(singleParam(AWS_S3_REGION).isRequired(true)),
       param(singleParam(KAFKA_BOOTSTRAP_SERVERS).isRequired(true)),
       param(singleParam(KAFKA_CONFIG_BACKUP_BUCKET).isRequired(true)),
       param(singleParam(RESTORE_HASH).isRequired(true)),
       param(singleParam(RESTORE_MODE).isRequired(true)
-          .allowedValues(List.of(MESSAGES.name(), TOPICS.name(), OFFSETS.name()))),
+          .allowedValues(Lists.newArrayList(MESSAGES.name(), TOPICS.name(), OFFSETS.name()))),
 
       param(singleParam(AWS_S3_PATH_STYLE_ACCESS_ENABLED).isRequired(false)),
       param(singleParam(RESTORE_DRY_RUN).isRequired(false)),

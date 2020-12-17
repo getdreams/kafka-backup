@@ -1,8 +1,12 @@
 package de.azapps.kafkabackup.restore.offset;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 
@@ -24,7 +28,9 @@ public class OffsetMapperParamsHelper {
   }
 
   static Map<Long, Long> offsetMap(SimpleImmutableEntry<Long, Long>... entries) {
-    return Map.ofEntries(entries);
+    List<SimpleImmutableEntry<Long, Long>> entryList = Stream.of(entries)
+        .collect(Collectors.toList());
+    return ImmutableMap.copyOf(entryList);
   }
 
   static Arguments singleTestCase(String description, Map<Long, Long> offsetMap, Long oldOffset,

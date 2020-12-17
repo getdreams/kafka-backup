@@ -7,6 +7,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.record.Record;
 import de.azapps.kafkabackup.helpers.TestRecordFactory;
@@ -52,7 +54,7 @@ public class PartitionMessageWriterWorkerTest {
         restoreMessageS3Service, restoreMessageProducer);
 
     when(restoreMessageS3Service.getMessageBackupFileNames(eq(TOPIC), eq(0)))
-        .thenReturn(List.of(FILE));
+        .thenReturn(ImmutableList.of(FILE));
 
     when(restoreMessageS3Service.readBatchFile(eq(FILE))).thenReturn(prepareRecords());
   }
@@ -97,7 +99,7 @@ public class PartitionMessageWriterWorkerTest {
   }
 
   private List<Record> prepareRecords() {
-    return List.of(
+    return ImmutableList.of(
         TestRecordFactory.getRecordWithOffsetAndTimestamp(0,
             baseDate.minusHours(1).toInstant(ZoneOffset.UTC).toEpochMilli()),
         TestRecordFactory

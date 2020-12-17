@@ -12,6 +12,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import de.azapps.kafkabackup.common.TopicsConfig;
 import de.azapps.kafkabackup.common.KafkaConfigReader;
 import de.azapps.kafkabackup.common.KafkaConfigWriter;
@@ -57,8 +59,8 @@ public class TopicConfigurationServiceTest {
 
   @BeforeAll
   public static void initTests() {
-    kafkaTopicConfiguration = TopicsConfig.of(List.of(configForFirstTopic, configForSecondTopic));
-    kafkaTopicNewConfiguration = TopicsConfig.of(List.of(changedConfigForFirstTopic, configForSecondTopic));
+    kafkaTopicConfiguration = TopicsConfig.of(ImmutableList.of(configForFirstTopic, configForSecondTopic));
+    kafkaTopicNewConfiguration = TopicsConfig.of(ImmutableList.of(changedConfigForFirstTopic, configForSecondTopic));
   }
 
   private TopicConfigurationService initTopicConfigurationService(long minInterval) {

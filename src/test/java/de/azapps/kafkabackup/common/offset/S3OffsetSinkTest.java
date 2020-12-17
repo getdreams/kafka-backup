@@ -1,5 +1,6 @@
 package de.azapps.kafkabackup.common.offset;
 
+import com.google.common.collect.ImmutableMap;
 import de.azapps.kafkabackup.storage.s3.AwsS3Service;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -41,7 +42,7 @@ class S3OffsetSinkTest {
     public void shouldFlushOffsetToCorrectFile() throws IOException {
         // GIVEN
         String topicName = "abc";
-        sut.writeOffsetsForGroup("S3OffsetSinkTest", Map.of(new TopicPartition(topicName, 0), new OffsetAndMetadata(0)));
+        sut.writeOffsetsForGroup("S3OffsetSinkTest", ImmutableMap.of(new TopicPartition(topicName, 0), new OffsetAndMetadata(0)));
 
         // WHEN
         sut.flush();
