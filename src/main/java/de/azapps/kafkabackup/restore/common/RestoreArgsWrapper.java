@@ -71,7 +71,7 @@ public class RestoreArgsWrapper {
   private final int restoreMessagesMaxThreads;
   private final String offsetMapFileName;
 
-  public static final List<RestoreArg> args = Arrays.asList(
+  public static final List<RestoreArg> args = Lists.newArrayList(
       param(singleParam(AWS_S3_REGION).isRequired(true)),
       param(singleParam(KAFKA_BOOTSTRAP_SERVERS).isRequired(true)),
       param(singleParam(KAFKA_CONFIG_BACKUP_BUCKET).isRequired(true)),
