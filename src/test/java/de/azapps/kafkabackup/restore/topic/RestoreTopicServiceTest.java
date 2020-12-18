@@ -11,6 +11,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.s3.model.S3Object;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
@@ -47,12 +49,12 @@ class RestoreTopicServiceTest {
   public void shouldRestoreAllTopics() {
     // given
     TopicConfiguration topicConfigurationForTopic1 = new TopicConfiguration("topic1", 3, 3);
-    topicConfigurationForTopic1.setConfiguration(Map.of("property1", "value1"));
+    topicConfigurationForTopic1.setConfiguration(ImmutableMap.of("property1", "value1"));
 
     TopicConfiguration topicConfigurationForTopic2 = new TopicConfiguration("topic2", 3, 3);
-    topicConfigurationForTopic2.setConfiguration(Map.of("property1", "value1"));
+    topicConfigurationForTopic2.setConfiguration(ImmutableMap.of("property1", "value1"));
     TopicsConfig topicsConfig = TopicsConfig
-        .of(List.of(topicConfigurationForTopic1, topicConfigurationForTopic2));
+        .of(ImmutableList.of(topicConfigurationForTopic1, topicConfigurationForTopic2));
 
     S3Object s3Object = new S3Object();
     s3Object.setObjectContent(new ByteArrayInputStream(topicsConfig.toJson().getBytes()));
@@ -82,9 +84,9 @@ class RestoreTopicServiceTest {
   public void shouldRestoreOnlyTopicFromConfiguration() {
     // given
     TopicConfiguration topicConfiguration = new TopicConfiguration("topic1", 3, 3);
-    topicConfiguration.setConfiguration(Map.of("property1", "value1"));
+    topicConfiguration.setConfiguration(ImmutableMap.of("property1", "value1"));
     TopicsConfig topicsConfig = TopicsConfig
-        .of(List.of(topicConfiguration));
+        .of(ImmutableList.of(topicConfiguration));
 
     S3Object s3Object = new S3Object();
     s3Object.setObjectContent(new ByteArrayInputStream(topicsConfig.toJson().getBytes()));
@@ -108,19 +110,19 @@ class RestoreTopicServiceTest {
     assertEquals(resultNewTopic.name(), "topic1");
     assertEquals(resultNewTopic.numPartitions(), 3);
     assertEquals(resultNewTopic.replicationFactor(), 3);
-    assertEquals(resultNewTopic.configs(), Map.of("property1", "value1"));
+    assertEquals(resultNewTopic.configs(), ImmutableMap.of("property1", "value1"));
   }
 
   @Test
   public void shouldOmitTopicsFromDenyListDuringRestoration() {
     // given
     TopicConfiguration topicConfigurationForTopic1 = new TopicConfiguration("topic1", 3, 3);
-    topicConfigurationForTopic1.setConfiguration(Map.of("property1", "value1"));
+    topicConfigurationForTopic1.setConfiguration(ImmutableMap.of("property1", "value1"));
 
     TopicConfiguration topicConfigurationForTopic2 = new TopicConfiguration("topic2", 3, 3);
-    topicConfigurationForTopic2.setConfiguration(Map.of("property1", "value1"));
+    topicConfigurationForTopic2.setConfiguration(ImmutableMap.of("property1", "value1"));
     TopicsConfig topicsConfig = TopicsConfig
-        .of(List.of(topicConfigurationForTopic1, topicConfigurationForTopic2));
+        .of(ImmutableList.of(topicConfigurationForTopic1, topicConfigurationForTopic2));
 
     S3Object s3Object = new S3Object();
     s3Object.setObjectContent(new ByteArrayInputStream(topicsConfig.toJson().getBytes()));
@@ -149,9 +151,9 @@ class RestoreTopicServiceTest {
   public void shouldNotCallCreateTopicsOnKafkaWhenInDryRun() {
     // given
     TopicConfiguration topicConfiguration = new TopicConfiguration("topic1", 3, 3);
-    topicConfiguration.setConfiguration(Map.of("property1", "value1"));
+    topicConfiguration.setConfiguration(ImmutableMap.of("property1", "value1"));
     TopicsConfig topicsConfig = TopicsConfig
-        .of(List.of(topicConfiguration));
+        .of(ImmutableList.of(topicConfiguration));
 
     S3Object s3Object = new S3Object();
     s3Object.setObjectContent(new ByteArrayInputStream(topicsConfig.toJson().getBytes()));
@@ -175,9 +177,9 @@ class RestoreTopicServiceTest {
   public void shouldThrowExceptionIfTopicFromConfigurationAlreadyExists() {
     // given
     TopicConfiguration topicConfiguration = new TopicConfiguration("topic1", 3, 3);
-    topicConfiguration.setConfiguration(Map.of("property1", "value1"));
+    topicConfiguration.setConfiguration(ImmutableMap.of("property1", "value1"));
     TopicsConfig topicsConfig = TopicsConfig
-        .of(List.of(topicConfiguration));
+        .of(ImmutableList.of(topicConfiguration));
 
     S3Object s3Object = new S3Object();
     s3Object.setObjectContent(new ByteArrayInputStream(topicsConfig.toJson().getBytes()));
@@ -188,7 +190,7 @@ class RestoreTopicServiceTest {
         .topicsDenyListRegex(NONE_TOPICS_REGEX)
         .build();
 
-    when(adminClientService.describeAllTopics()).thenReturn(List.of(topicConfiguration));
+    when(adminClientService.describeAllTopics()).thenReturn(ImmutableList.of(topicConfiguration));
 
     // when
     RuntimeException runtimeException = assertThrows(RuntimeException.class,

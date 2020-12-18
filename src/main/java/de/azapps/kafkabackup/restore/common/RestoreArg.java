@@ -1,5 +1,7 @@
 package de.azapps.kafkabackup.restore.common;
 
+import com.google.common.collect.Lists;
+import java.util.Arrays;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +20,7 @@ public class RestoreArg {
 
   public static RestoreArgBuilder singleParam(String name) {
     return RestoreArg.builder()
-        .names(List.of(name));
+        .names(Lists.newArrayList(name));
   }
 
   public static RestoreArgBuilder optional() {

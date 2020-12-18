@@ -12,12 +12,13 @@ import static de.azapps.kafkabackup.common.topic.TestTopicConfigHelper.topicConf
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.when;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import de.azapps.kafkabackup.common.AdminClientService;
 import de.azapps.kafkabackup.common.KafkaConfigReader;
 import de.azapps.kafkabackup.common.TopicConfiguration;
 import de.azapps.kafkabackup.common.TopicsConfig;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -37,7 +38,7 @@ class KafkaConfigReaderTest {
   @Mock
   AdminClientService adminClientService;
 
-  private static final Set<String> DEFAULT_CONFIG_PROPERTIES = Set.of(PROPERTY_1, PROPERTY_2);
+  private static final Set<String> DEFAULT_CONFIG_PROPERTIES = ImmutableSet.of(PROPERTY_1, PROPERTY_2);
 
   @BeforeEach
   public void init() {
@@ -52,14 +53,14 @@ class KafkaConfigReaderTest {
     TopicConfiguration topicConfigurationForSecondTopic = topicConfiguration(TOPIC_NAME_2);
 
     when(adminClientService.describeAllTopics())
-        .thenReturn(List.of(topicConfigurationForFirstTopic, topicConfigurationForSecondTopic));
+        .thenReturn(ImmutableList.of(topicConfigurationForFirstTopic, topicConfigurationForSecondTopic));
 
     Map<ConfigResource, Config> configuration = configuration(
         forTopic(TOPIC_NAME_1).withConfig(PROPERTY_1, VALUE_1),
         forTopic(TOPIC_NAME_2).withConfig(PROPERTY_2, VALUE_2)
     );
 
-    when(adminClientService.getConfigs(List.of(TOPIC_NAME_1, TOPIC_NAME_2))).thenReturn(configuration);
+    when(adminClientService.getConfigs(ImmutableList.of(TOPIC_NAME_1, TOPIC_NAME_2))).thenReturn(configuration);
 
     // when
     TopicsConfig topicsConfigResult = sut.readCurrentConfig();
@@ -87,14 +88,14 @@ class KafkaConfigReaderTest {
     TopicConfiguration topicConfigurationForSecondTopic = topicConfiguration(TOPIC_NAME_2);
 
     when(adminClientService.describeAllTopics())
-        .thenReturn(List.of(topicConfigurationForFirstTopic, topicConfigurationForSecondTopic));
+        .thenReturn(ImmutableList.of(topicConfigurationForFirstTopic, topicConfigurationForSecondTopic));
 
     Map<ConfigResource, Config> configuration = configuration(
         forTopic(TOPIC_NAME_1).withConfig(PROPERTY_1, VALUE_1),
         forTopic(TOPIC_NAME_2).withConfig(PROPERTY_2, VALUE_2)
     );
 
-    when(adminClientService.getConfigs(List.of(TOPIC_NAME_1, TOPIC_NAME_2))).thenReturn(configuration);
+    when(adminClientService.getConfigs(ImmutableList.of(TOPIC_NAME_1, TOPIC_NAME_2))).thenReturn(configuration);
 
     // when
     TopicsConfig topicsConfigResult = sut.readCurrentConfig();
@@ -123,14 +124,14 @@ class KafkaConfigReaderTest {
     TopicConfiguration topicConfigurationForSecondTopic = topicConfiguration(TOPIC_NAME_2);
 
     when(adminClientService.describeAllTopics())
-        .thenReturn(List.of(topicConfigurationForFirstTopic, topicConfigurationForSecondTopic));
+        .thenReturn(ImmutableList.of(topicConfigurationForFirstTopic, topicConfigurationForSecondTopic));
 
     Map<ConfigResource, Config> configuration = configuration(
         forTopic(TOPIC_NAME_1).withConfig(PROPERTY_1, VALUE_1),
         forTopic(TOPIC_NAME_2).withConfig(PROPERTY_2, VALUE_2)
     );
 
-    when(adminClientService.getConfigs(List.of(TOPIC_NAME_1, TOPIC_NAME_2))).thenReturn(configuration);
+    when(adminClientService.getConfigs(ImmutableList.of(TOPIC_NAME_1, TOPIC_NAME_2))).thenReturn(configuration);
 
     // when
     TopicsConfig topicsConfigResult = sut.readCurrentConfig();
