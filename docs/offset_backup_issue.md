@@ -4,7 +4,7 @@
 Currently, kafka-backup process  uses two different mechanisms for backing up offsets and messages.
 
 Message backup utilizes sink connector mechanism but offsets are read from cluster via an administrative client for kafka cluster.
-This means that while messages are read continuously (though tey are saved in batches based on batch size and time), 
+This means that while messages are read continuously (though they are saved in batches based on a batch size and time), 
 the offsets are being written to S3 with scheduled time intervals.
 
 As a result, after restoration process information regarding offsets for consumer groups me may not be accurate if any of consumers where working after last offset backup ws created.
