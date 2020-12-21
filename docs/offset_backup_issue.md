@@ -1,7 +1,7 @@
 ## Offset and message backup time discrepancies
 
 ### Problem description
-Currently, kafka-backup process  uses two different mechanism for backing up offsets and messages.
+Currently, kafka-backup process  uses two different mechanisms for backing up offsets and messages.
 
 Message backup utilizes sink connector mechanism and offsets are read from cluster via an administrative client for kafka cluster.
 This means that while messages are read continuously (though tey are saved in batches based on batch size and time), 
