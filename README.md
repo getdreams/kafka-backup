@@ -38,6 +38,8 @@ system.
 * [Architecture](./docs/Kafka_Backup_Architecture.md)
 * [Tooling](./docs/Tooling.md)
 * [Build and Run](./docs/Build_and_Run.md)
+* [Offset and message backup time discrepancies](./docs/offset_backup_issue.md)
+
 
 ## License
 
