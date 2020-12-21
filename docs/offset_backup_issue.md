@@ -13,7 +13,7 @@ That in  turn  would introduce a need to examin system logs, and all accessible 
 
 ### Possible improvement 
 
-There is another approach that could minimize risk of offsets and messages back-ups being out of sync.
+There is another approach that could minimize the risk of offsets and messages back-ups being out of sync.
 
 By implementing simple consumer that will read the internal topic ``__consumer_offsets`` we can get a similarly continuous image off offset commits as for messages.
 The problems to overcome would be:
