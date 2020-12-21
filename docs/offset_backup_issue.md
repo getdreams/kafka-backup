@@ -3,7 +3,7 @@
 ### Problem description
 Currently, kafka-backup process  uses two different mechanisms for backing up offsets and messages.
 
-Message backup utilizes sink connector mechanism and offsets are read from cluster via an administrative client for kafka cluster.
+Message backup utilizes sink connector mechanism but offsets are read from cluster via an administrative client for kafka cluster.
 This means that while messages are read continuously (though tey are saved in batches based on batch size and time), 
 the offsets are being written to S3 with scheduled time intervals.
 
