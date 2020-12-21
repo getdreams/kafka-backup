@@ -19,6 +19,6 @@ By implementing a simple consumer that reads the internal topic ``__consumer_off
 The problems to overcome would be:
 - aggregating all consumer groups to a single file per topic partition - this would probably lead to changing offset backup structure because we are preserving the whole offsets history to allow restoring to a point in time
 - under the heavy load with many consumers probably few nodes would be required to process all messages
-
+- ``__consumer_offsets`` is an internal kafka topic and its format may change which could break the backup if the library is not updated.
    
  
