@@ -17,7 +17,7 @@ There is another approach that could minimize the risk of offsets and messages b
 
 By implementing a simple consumer that reads the internal topic ``__consumer_offsets`` we can get a similarly continuous image of offset commits as for messages.
 The problems to overcome would be:
-- aggregating all consumer groups to single file per topic partition - this would probably lead to changing offset backup structure because we are preserving all offset history to allow restoring to point in time
+- aggregating all consumer groups to a single file per topic partition - this would probably lead to changing offset backup structure because we are preserving the whole offsets history to allow restoring to a point in time
 - under the heavy load with many consumers probably few nodes would be required to process all messages
 
    
