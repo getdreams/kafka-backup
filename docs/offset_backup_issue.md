@@ -7,7 +7,7 @@ Message backup utilizes sink connector mechanism but offsets are read from clust
 This means that while messages are read continuously (though they are saved in batches based on a batch size and time), 
 the offsets are being written to S3 with scheduled time intervals.
 
-As a result, after restoration process information regarding offsets for consumer groups me may not be accurate if any of consumers where working after last offset backup ws created.
+As a result, when the restoration process is finished, information regarding offsets for consumer groups may not be accurate if any of consumers was still consuming messages after last offset backup was created.
 
 That in  turn  would introduce a need to examin system logs, and all accessible data states to verify whether some of the messages had already been consumed.
 
